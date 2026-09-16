@@ -98,6 +98,7 @@ h1 {
   color: var(--muted);
   font-size: clamp(0.95rem, 1.3vw, 1.08rem);
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .mascot-scene {
@@ -240,7 +241,7 @@ h1 {
 
 .race-scene {
   position: relative;
-  min-height: 214px;
+  min-height: 172px;
   overflow: hidden;
   border: 2px solid rgba(23, 32, 51, 0.08);
   border-radius: 16px;
@@ -258,32 +259,32 @@ h1 {
 }
 
 .race-sky span:nth-child(1) {
-  top: 22px;
+  top: 18px;
   left: 12%;
-  width: 58px;
-  height: 18px;
+  width: 48px;
+  height: 15px;
 }
 
 .race-sky span:nth-child(2) {
-  top: 42px;
+  top: 34px;
   left: 46%;
-  width: 74px;
-  height: 21px;
+  width: 60px;
+  height: 18px;
 }
 
 .race-sky span:nth-child(3) {
-  top: 24px;
+  top: 19px;
   right: 10%;
-  width: 48px;
-  height: 16px;
+  width: 40px;
+  height: 14px;
 }
 
 .race-road {
   position: absolute;
   left: 5%;
   right: 5%;
-  bottom: 30px;
-  height: 46px;
+  bottom: 22px;
+  height: 34px;
   border: 2px dashed rgba(23, 32, 51, 0.18);
   border-radius: 999px;
   background:
@@ -293,18 +294,18 @@ h1 {
 
 .race-fill {
   position: absolute;
-  inset: 8px auto 8px 8px;
-  width: 82%;
+  inset: 6px auto 6px 6px;
+  width: 68%;
   border-radius: 999px;
   background: linear-gradient(90deg, #ffe8a3, #cdeee1, #dce8ff);
 }
 
 .finish-line {
   position: absolute;
-  right: 10px;
+  right: 8px;
   top: 50%;
   transform: translateY(-54%);
-  font-size: 1.55rem;
+  font-size: 1.2rem;
   z-index: 2;
 }
 
@@ -327,34 +328,34 @@ h1 {
   grid-template-areas:
     "rank medal"
     "emoji name";
-  gap: 3px 7px;
+  gap: 2px 5px;
   align-items: center;
   transform: translateX(-50%);
   z-index: 3;
 }
 
 .race-runner.runner-1 {
-  bottom: 70px;
+  bottom: 54px;
 }
 
 .race-runner.runner-2 {
-  bottom: 112px;
+  bottom: 88px;
 }
 
 .race-runner.runner-3 {
-  bottom: 26px;
+  bottom: 21px;
 }
 
 .race-runner .rank-badge {
   grid-area: rank;
-  width: 28px;
-  border-radius: 10px;
-  font-size: 0.82rem;
+  width: 22px;
+  border-radius: 8px;
+  font-size: 0.7rem;
 }
 
 .runner-emoji {
   grid-area: emoji;
-  font-size: 2.4rem;
+  font-size: 1.65rem;
   line-height: 1;
   filter: drop-shadow(0 6px 3px rgba(23, 32, 51, 0.15));
 }
@@ -362,25 +363,27 @@ h1 {
 .runner-medal {
   grid-area: medal;
   width: max-content;
-  padding: 5px 9px;
+  padding: 3px 7px;
   border: 2px solid color-mix(in srgb, var(--team-color), white 52%);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
-  font-size: 0.84rem;
+  font-size: 0.72rem;
   font-weight: 900;
+  white-space: nowrap;
 }
 
 .runner-name {
   grid-area: name;
   width: max-content;
-  max-width: 94px;
-  padding: 3px 8px;
+  max-width: 82px;
+  padding: 2px 7px;
   border-radius: 999px;
   color: #fff;
   background: var(--team-color);
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 900;
   text-align: center;
+  white-space: nowrap;
 }
 
 .score-strip {
@@ -736,6 +739,10 @@ select {
     padding: 30px 22px;
   }
 
+  .subcopy {
+    font-size: 0.92rem;
+  }
+
   .mascot-scene {
     min-height: 220px;
   }
@@ -751,28 +758,28 @@ select {
   }
 
   .race-scene {
-    min-height: 250px;
+    min-height: 192px;
   }
 
   .race-runner.runner-1 {
-    bottom: 86px;
+    bottom: 65px;
   }
 
   .race-runner.runner-2 {
-    bottom: 140px;
+    bottom: 107px;
   }
 
   .race-runner.runner-3 {
-    bottom: 34px;
+    bottom: 25px;
   }
 
   .runner-emoji {
-    font-size: 2.1rem;
+    font-size: 1.55rem;
   }
 
   .runner-medal,
   .runner-name {
-    font-size: 0.72rem;
+    font-size: 0.66rem;
   }
 
   .section-title.inline {

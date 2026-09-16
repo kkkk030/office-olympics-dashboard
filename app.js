@@ -20,6 +20,7 @@ const defaultState = {
 
 const state = structuredClone(defaultState);
 let activeFilter = "all";
+const rankRunners = ["🐰", "🐢", "🦥"];
 
 const nodes = {
   raceTrack: document.querySelector("#raceTrack"),
@@ -84,14 +85,14 @@ function renderRaceTrack(rows) {
   const leaderGold = Math.max(...rows.map((team) => team.gold), 1);
   const runnerMarkup = rows
     .map((team, index) => {
-      const position = Math.round(12 + (team.gold / leaderGold) * 76);
+      const position = Math.round(10 + (team.gold / leaderGold) * 56);
       return `
         <div
           class="race-runner runner-${index + 1}"
           style="--team-color:${team.color}; --runner-position:${position}%"
         >
           <span class="rank-badge">${index + 1}</span>
-          <span class="runner-emoji" aria-hidden="true">${team.runner}</span>
+          <span class="runner-emoji" aria-hidden="true">${rankRunners[index] ?? "🏃"}</span>
           <span class="runner-medal">🥇 ${team.gold}개</span>
           <span class="runner-name">${team.name}</span>
         </div>
