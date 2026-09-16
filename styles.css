@@ -220,6 +220,7 @@ h1 {
 .race-overview,
 .score-strip,
 .layout,
+.guestbook-panel,
 .control-panel {
   margin-top: 14px;
 }
@@ -549,6 +550,7 @@ h1 {
 .score-strip > div,
 .leaderboard-panel,
 .events-panel,
+.guestbook-panel,
 .control-panel {
   border: 2px solid rgba(23, 32, 51, 0.08);
   border-radius: 18px;
@@ -595,8 +597,77 @@ h1 {
 
 .leaderboard-panel,
 .events-panel,
+.guestbook-panel,
 .control-panel {
   padding: 18px;
+}
+
+.guestbook-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.comment-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  text-decoration: none;
+}
+
+.comment-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.comment-card,
+.comment-state {
+  min-height: 112px;
+  margin: 0;
+  padding: 14px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.comment-meta strong {
+  font-size: 0.9rem;
+}
+
+.comment-meta span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.comment-card p {
+  margin: 0;
+  color: #3f495a;
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.comment-state {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 800;
+  text-align: center;
 }
 
 .section-title {
@@ -873,6 +944,10 @@ select {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .comment-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .score-strip,
   .editor-grid {
     grid-template-columns: 1fr;
@@ -910,6 +985,7 @@ select {
 
   .score-strip,
   .event-grid,
+  .comment-list,
   .editor-grid {
     grid-template-columns: 1fr;
   }
@@ -956,7 +1032,8 @@ select {
   }
 
   .filters,
-  .toolbar {
+  .toolbar,
+  .guestbook-actions {
     justify-content: flex-start;
   }
 }

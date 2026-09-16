@@ -1,4 +1,5 @@
 const emptyMedals = { gold: "", silver: "", bronze: "" };
+const commentsApiUrl = "https://api.github.com/repos/kkkk030/office-olympics-dashboard/issues/1/comments?per_page=30";
 
 const defaultState = {
   teams: [
@@ -35,6 +36,8 @@ const nodes = {
   remainingLabel: document.querySelector("#remainingLabel"),
   leaderboard: document.querySelector("#leaderboard"),
   eventGrid: document.querySelector("#eventGrid"),
+  commentList: document.querySelector("#commentList"),
+  refreshComments: document.querySelector("#refreshComments"),
   template: document.querySelector("#eventCardTemplate"),
 };
 
@@ -220,6 +223,81 @@ function renderEvents() {
   });
 }
 
+function plainTextFromMarkdown(value) {
+  return value
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[*_~>]/g, "")
+    .trim();
+}
+
+function escapeHtml(value) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character]);
+}
+
+function renderCommentState(message) {
+  nodes.commentList.innerHTML = `<p class="comment-state">${message}</p>`;
+}
+
+function renderComments(comments) {
+  if (!comments.length) {
+    renderCommentState("아직 댓글이 없습니다. 첫 응원을 남겨주세요.");
+    return;
+  }
+
+  nodes.commentList.innerHTML = comments
+    .slice(-12)
+    .reverse()
+    .map((comment, index) => {
+      const body = escapeHtml(plainTextFromMarkdown(comment.body || ""));
+      const date = new Intl.DateTimeFormat("ko-KR", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(comment.created_at));
+
+      return `
+        <article class="comment-card">
+          <div class="comment-meta">
+            <strong>익명 응원단 ${comments.length - index}</strong>
+            <span>${date}</span>
+          </div>
+          <p>${body || "응원 메시지"}</p>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+async function loadComments() {
+  if (!nodes.commentList) return;
+
+  renderCommentState("댓글을 불러오는 중입니다.");
+  nodes.refreshComments?.setAttribute("disabled", "");
+
+  try {
+    const response = await fetch(commentsApiUrl, {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+
+    if (!response.ok) throw new Error("comment fetch failed");
+    renderComments(await response.json());
+  } catch (error) {
+    renderCommentState("댓글을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.");
+  } finally {
+    nodes.refreshComments?.removeAttribute("disabled");
+  }
+}
+
 function render() {
   const rows = medalTable();
   renderRaceTrack(rows);
@@ -236,4 +314,7 @@ document.querySelectorAll(".filter").forEach((button) => {
   });
 });
 
+nodes.refreshComments?.addEventListener("click", loadComments);
+
 render();
+loadComments();
