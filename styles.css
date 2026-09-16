@@ -215,14 +215,14 @@ h1 {
   border-radius: 0 0 30px 30px;
 }
 
-.team-overview,
+.race-overview,
 .score-strip,
 .layout,
 .control-panel {
   margin-top: 14px;
 }
 
-.team-overview {
+.race-overview {
   padding: 16px;
   border: 2px solid rgba(23, 32, 51, 0.08);
   border-radius: 18px;
@@ -234,35 +234,37 @@ h1 {
   margin-bottom: 12px;
 }
 
-.team-strip {
+.race-track {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 
-.team-summary {
+.race-lane {
   position: relative;
   overflow: hidden;
-  min-height: 128px;
-  padding: 16px;
+  display: grid;
+  grid-template-columns: 174px minmax(180px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 86px;
+  padding: 12px;
   border: 2px solid rgba(23, 32, 51, 0.08);
-  border-radius: 18px;
+  border-radius: 16px;
   background: #fff;
-  box-shadow: 0 14px 34px rgba(77, 91, 122, 0.1);
+  box-shadow: 0 10px 26px rgba(77, 91, 122, 0.09);
 }
 
-.team-summary::after {
+.race-lane::after {
   content: "";
   position: absolute;
-  right: -32px;
-  top: -40px;
-  width: 112px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--team-color), transparent 72%);
+  inset: 0;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--team-color), transparent 88%), transparent 42%),
+    repeating-linear-gradient(90deg, transparent 0 20px, rgba(23, 32, 51, 0.035) 20px 22px);
+  pointer-events: none;
 }
 
-.summary-head {
+.lane-label {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -273,31 +275,67 @@ h1 {
 .rank-badge {
   display: grid;
   place-items: center;
-  width: 42px;
+  width: 38px;
   aspect-ratio: 1;
-  border-radius: 14px;
+  border-radius: 13px;
   color: #fff;
   font-weight: 900;
   background: var(--team-color);
 }
 
-.summary-head h2 {
+.lane-label h3 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.04rem;
 }
 
-.summary-head p {
+.lane-label p {
   margin: 3px 0 0;
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: 0.8rem;
   font-weight: 800;
 }
 
-.summary-medals {
+.lane-track {
+  position: relative;
+  z-index: 1;
+  height: 42px;
+  border: 2px dashed color-mix(in srgb, var(--team-color), transparent 34%);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(247, 248, 251, 0.95)),
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(23, 32, 51, 0.04) 34px 36px);
+}
+
+.lane-fill {
+  position: absolute;
+  inset: 6px auto 6px 6px;
+  width: var(--race-progress);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--team-color), white 58%);
+}
+
+.runner {
+  position: absolute;
+  left: calc(var(--race-progress) - 6px);
+  top: 50%;
+  transform: translate(-50%, -52%);
+  font-size: 2rem;
+  filter: drop-shadow(0 5px 3px rgba(23, 32, 51, 0.14));
+}
+
+.finish-flag {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  transform: translateY(-52%);
+  font-size: 1.35rem;
+}
+
+.lane-score {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
-  margin-top: 14px;
+  justify-content: flex-end;
   position: relative;
   z-index: 1;
 }
@@ -635,10 +673,14 @@ select {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .team-strip,
+  .race-lane,
   .score-strip,
   .editor-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+  }
+
+  .lane-score {
+    justify-content: flex-start;
   }
 }
 
@@ -661,10 +703,17 @@ select {
   }
 
   .score-strip,
-  .team-strip,
   .event-grid,
   .editor-grid {
     grid-template-columns: 1fr;
+  }
+
+  .race-overview {
+    padding: 12px;
+  }
+
+  .race-lane {
+    min-height: 154px;
   }
 
   .section-title.inline {

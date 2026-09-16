@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Office Mini Olympics Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=3" />
+    <link rel="stylesheet" href="styles.css?v=4" />
   </head>
   <body>
     <main class="shell">
@@ -12,7 +12,7 @@
         <div class="hero-copy">
           <p class="eyebrow">2주간의 사내 미니 올림픽</p>
           <h1>Office Mini Olympics</h1>
-          <p class="subcopy">세 팀의 종목별 메달 현황과 종합 순위를 실시간으로 보는 귀여운 현황판</p>
+          <p class="subcopy">시온팀, 나영팀, 상윤팀의 종목별 메달과 귀여운 순위 레이스를 한눈에 보는 현황판</p>
         </div>
         <div class="mascot-scene" aria-hidden="true">
           <div class="sunburst"></div>
@@ -31,21 +31,21 @@
         </div>
       </section>
 
-      <section class="team-overview" aria-label="팀별 메달 현황">
+      <section class="race-overview" aria-label="팀별 순위 레이스">
         <div class="section-title inline compact-title">
           <div>
-            <p>Team Medal Board</p>
-            <h2>A / B / C 팀 메달 현황</h2>
+            <p>Team Race</p>
+            <h2>오늘의 순위 레이스</h2>
           </div>
         </div>
-        <div id="teamStrip" class="team-strip"></div>
+        <div id="raceTrack" class="race-track"></div>
       </section>
 
       <section class="layout">
         <aside class="leaderboard-panel" aria-label="팀별 메달 순위">
           <div class="section-title">
             <p>Team Medal Race</p>
-            <h2>종합 순위</h2>
+            <h2>메달현황</h2>
           </div>
           <div id="leaderboard" class="leaderboard"></div>
         </aside>
@@ -101,6 +101,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
   </body>
 </html>

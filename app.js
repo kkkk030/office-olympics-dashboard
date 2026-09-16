@@ -2,9 +2,9 @@ const emptyMedals = { gold: "", silver: "", bronze: "" };
 
 const defaultState = {
   teams: [
-    { id: "a", name: "A팀", color: "#22b98f", mascot: "토끼단" },
-    { id: "b", name: "B팀", color: "#ff8f6b", mascot: "로켓단" },
-    { id: "c", name: "C팀", color: "#4d8dff", mascot: "별똥단" },
+    { id: "a", name: "시온팀", color: "#22b98f", mascot: "토끼", runner: "🐰" },
+    { id: "b", name: "나영팀", color: "#ff8f6b", mascot: "거북이", runner: "🐢" },
+    { id: "c", name: "상윤팀", color: "#4d8dff", mascot: "나무늘보", runner: "🦥" },
   ],
   events: [
     { id: "quiz", name: "스피드 퀴즈", day: "Day 1", icon: "🧠", status: "done", medals: { gold: "a", silver: "c", bronze: "b" } },
@@ -22,7 +22,7 @@ const state = structuredClone(defaultState);
 let activeFilter = "all";
 
 const nodes = {
-  teamStrip: document.querySelector("#teamStrip"),
+  raceTrack: document.querySelector("#raceTrack"),
   progressLabel: document.querySelector("#progressLabel"),
   progressBar: document.querySelector("#progressBar"),
   completedCount: document.querySelector("#completedCount"),
@@ -80,26 +80,35 @@ function medalPill(label, value, className = "") {
   return `<span class="count-pill ${className}">${label} ${value}</span>`;
 }
 
-function renderTeamStrip(rows) {
-  nodes.teamStrip.innerHTML = rows
+function renderRaceTrack(rows) {
+  const leaderScore = Math.max(...rows.map((team) => team.total), 1);
+  nodes.raceTrack.innerHTML = rows
     .map(
-      (team, index) => `
-        <article class="team-summary" style="--team-color:${team.color}">
-          <div class="summary-head">
-            <span class="rank-badge">${index + 1}</span>
-            <div>
-              <h2>${team.name}</h2>
-              <p>${team.mascot}</p>
+      (team, index) => {
+        const progress = Math.max(16, Math.round((team.total / leaderScore) * 82));
+        return `
+          <article class="race-lane" style="--team-color:${team.color}; --race-progress:${progress}%">
+            <div class="lane-label">
+              <span class="rank-badge">${index + 1}</span>
+              <div>
+                <h3>${team.name}</h3>
+                <p>${team.mascot} 대표주자</p>
+              </div>
             </div>
-          </div>
-          <div class="summary-medals">
-            ${medalPill("🥇", team.gold)}
-            ${medalPill("🥈", team.silver)}
-            ${medalPill("🥉", team.bronze)}
-            ${medalPill("합계", team.total, "total")}
-          </div>
-        </article>
-      `,
+            <div class="lane-track">
+              <span class="lane-fill"></span>
+              <span class="runner" aria-hidden="true">${team.runner}</span>
+              <span class="finish-flag" aria-hidden="true">🏁</span>
+            </div>
+            <div class="lane-score">
+              ${medalPill("🥇", team.gold)}
+              ${medalPill("🥈", team.silver)}
+              ${medalPill("🥉", team.bronze)}
+              ${medalPill("합계", team.total, "total")}
+            </div>
+          </article>
+        `;
+      },
     )
     .join("");
 }
@@ -166,7 +175,7 @@ function renderEvents() {
 
 function render() {
   const rows = medalTable();
-  renderTeamStrip(rows);
+  renderRaceTrack(rows);
   renderSummary(rows);
   renderLeaderboard(rows);
   renderEvents();
