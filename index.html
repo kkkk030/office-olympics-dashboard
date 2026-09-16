@@ -31,6 +31,8 @@
         </div>
       </section>
 
+      <section id="teamStrip" class="team-strip" aria-label="팀별 메달 요약"></section>
+
       <section class="score-strip" aria-label="대회 요약">
         <div>
           <span class="label">진행률</span>
@@ -74,51 +76,6 @@
           </div>
           <div id="eventGrid" class="event-grid"></div>
         </section>
-      </section>
-
-      <section class="control-panel" aria-label="현황판 관리">
-        <div class="section-title inline">
-          <div>
-            <p>Control Room</p>
-            <h2>결과 입력</h2>
-          </div>
-          <div class="toolbar">
-            <button id="exportBtn" class="ghost">내보내기</button>
-            <label class="ghost file-btn">
-              가져오기
-              <input id="importInput" type="file" accept="application/json" />
-            </label>
-            <button id="resetBtn" class="danger">샘플 초기화</button>
-          </div>
-        </div>
-
-        <div class="editor-grid">
-          <label>
-            종목
-            <select id="eventSelect"></select>
-          </label>
-          <label>
-            금메달
-            <select id="goldSelect"></select>
-          </label>
-          <label>
-            은메달
-            <select id="silverSelect"></select>
-          </label>
-          <label>
-            동메달
-            <select id="bronzeSelect"></select>
-          </label>
-          <label>
-            상태
-            <select id="statusSelect">
-              <option value="pending">진행 전</option>
-              <option value="live">진행 중</option>
-              <option value="done">완료</option>
-            </select>
-          </label>
-          <button id="saveBtn" class="primary">저장</button>
-        </div>
       </section>
     </main>
 
