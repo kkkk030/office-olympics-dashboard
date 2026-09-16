@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Office Mini Olympics Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">2주간의 사내 미니 올림픽</p>
+          <h1>Office Mini Olympics</h1>
+          <p class="subcopy">세 팀의 종목별 메달 현황과 종합 순위를 실시간으로 보는 귀여운 현황판</p>
+        </div>
+        <div class="mascot-scene" aria-hidden="true">
+          <div class="sunburst"></div>
+          <div class="podium">
+            <span class="medal-dot gold"></span>
+            <span class="medal-dot silver"></span>
+            <span class="medal-dot bronze"></span>
+          </div>
+          <div class="mascot">
+            <div class="face">
+              <span></span>
+              <span></span>
+            </div>
+            <div class="smile"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="score-strip" aria-label="대회 요약">
+        <div>
+          <span class="label">진행률</span>
+          <strong id="progressLabel">0%</strong>
+          <div class="progress-track"><span id="progressBar"></span></div>
+        </div>
+        <div>
+          <span class="label">완료 종목</span>
+          <strong id="completedCount">0 / 0</strong>
+        </div>
+        <div>
+          <span class="label">현재 1위</span>
+          <strong id="leaderName">-</strong>
+        </div>
+        <div>
+          <span class="label">남은 일정</span>
+          <strong id="remainingLabel">-</strong>
+        </div>
+      </section>
+
+      <section class="layout">
+        <aside class="leaderboard-panel" aria-label="팀별 메달 순위">
+          <div class="section-title">
+            <p>Team Medal Race</p>
+            <h2>종합 순위</h2>
+          </div>
+          <div id="leaderboard" class="leaderboard"></div>
+        </aside>
+
+        <section class="events-panel" aria-label="종목별 메달 현황">
+          <div class="section-title inline">
+            <div>
+              <p>Event Board</p>
+              <h2>종목별 메달 현황</h2>
+            </div>
+            <div class="filters" role="tablist" aria-label="종목 필터">
+              <button class="filter active" data-filter="all">전체</button>
+              <button class="filter" data-filter="done">완료</button>
+              <button class="filter" data-filter="pending">진행 전</button>
+            </div>
+          </div>
+          <div id="eventGrid" class="event-grid"></div>
+        </section>
+      </section>
+
+      <section class="control-panel" aria-label="현황판 관리">
+        <div class="section-title inline">
+          <div>
+            <p>Control Room</p>
+            <h2>결과 입력</h2>
+          </div>
+          <div class="toolbar">
+            <button id="exportBtn" class="ghost">내보내기</button>
+            <label class="ghost file-btn">
+              가져오기
+              <input id="importInput" type="file" accept="application/json" />
+            </label>
+            <button id="resetBtn" class="danger">샘플 초기화</button>
+          </div>
+        </div>
+
+        <div class="editor-grid">
+          <label>
+            종목
+            <select id="eventSelect"></select>
+          </label>
+          <label>
+            금메달
+            <select id="goldSelect"></select>
+          </label>
+          <label>
+            은메달
+            <select id="silverSelect"></select>
+          </label>
+          <label>
+            동메달
+            <select id="bronzeSelect"></select>
+          </label>
+          <label>
+            상태
+            <select id="statusSelect">
+              <option value="pending">진행 전</option>
+              <option value="live">진행 중</option>
+              <option value="done">완료</option>
+            </select>
+          </label>
+          <button id="saveBtn" class="primary">저장</button>
+        </div>
+      </section>
+    </main>
+
+    <template id="eventCardTemplate">
+      <article class="event-card">
+        <div class="event-topline">
+          <span class="event-icon"></span>
+          <span class="status-pill"></span>
+        </div>
+        <h3></h3>
+        <p class="event-day"></p>
+        <div class="medal-row" data-medal="gold"></div>
+        <div class="medal-row" data-medal="silver"></div>
+        <div class="medal-row" data-medal="bronze"></div>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
