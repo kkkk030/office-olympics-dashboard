@@ -353,11 +353,123 @@ h1 {
   font-size: 0.7rem;
 }
 
-.runner-emoji {
+.animal-shape {
+  position: relative;
   grid-area: emoji;
-  font-size: 1.65rem;
-  line-height: 1;
+  display: block;
+  width: 30px;
+  height: 24px;
+  border: 2px solid rgba(23, 32, 51, 0.18);
   filter: drop-shadow(0 6px 3px rgba(23, 32, 51, 0.15));
+}
+
+.animal-shape span,
+.animal-shape::before,
+.animal-shape::after {
+  content: "";
+  position: absolute;
+  display: block;
+}
+
+.animal-shape.rabbit {
+  border-radius: 48% 48% 42% 42%;
+  background: #fff7ef;
+}
+
+.animal-shape.rabbit::before,
+.animal-shape.rabbit::after {
+  top: -13px;
+  width: 8px;
+  height: 18px;
+  border: 2px solid rgba(23, 32, 51, 0.18);
+  border-bottom: 0;
+  border-radius: 999px 999px 0 0;
+  background: #fff7ef;
+}
+
+.animal-shape.rabbit::before {
+  left: 6px;
+  transform: rotate(-10deg);
+}
+
+.animal-shape.rabbit::after {
+  right: 6px;
+  transform: rotate(10deg);
+}
+
+.animal-shape.rabbit span {
+  left: 8px;
+  top: 9px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 10px 0 0 var(--ink), 5px 7px 0 -1px #ef7f90;
+}
+
+.animal-shape.turtle {
+  border-radius: 50% 55% 48% 48%;
+  background: #65c987;
+}
+
+.animal-shape.turtle::before {
+  right: -9px;
+  top: 7px;
+  width: 10px;
+  height: 9px;
+  border-radius: 50%;
+  background: #8edfa6;
+  border: 2px solid rgba(23, 32, 51, 0.14);
+}
+
+.animal-shape.turtle::after {
+  left: 7px;
+  top: 5px;
+  width: 14px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.58);
+}
+
+.animal-shape.turtle span {
+  right: -4px;
+  top: 10px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.animal-shape.sloth {
+  border-radius: 46% 46% 54% 54%;
+  background: #9a6a43;
+}
+
+.animal-shape.sloth::before,
+.animal-shape.sloth::after {
+  top: 7px;
+  width: 8px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f2dfc7;
+}
+
+.animal-shape.sloth::before {
+  left: 5px;
+}
+
+.animal-shape.sloth::after {
+  right: 5px;
+}
+
+.animal-shape.sloth span {
+  left: 8px;
+  top: 10px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 11px 0 0 var(--ink), 5px 7px 0 -1px #5a3823;
 }
 
 .runner-medal {
@@ -375,7 +487,7 @@ h1 {
 .runner-name {
   grid-area: name;
   width: max-content;
-  max-width: 82px;
+  max-width: 104px;
   padding: 2px 7px;
   border-radius: 999px;
   color: #fff;
@@ -773,8 +885,9 @@ select {
     bottom: 25px;
   }
 
-  .runner-emoji {
-    font-size: 1.55rem;
+  .animal-shape {
+    width: 27px;
+    height: 21px;
   }
 
   .runner-medal,

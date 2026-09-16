@@ -20,7 +20,11 @@ const defaultState = {
 
 const state = structuredClone(defaultState);
 let activeFilter = "all";
-const rankRunners = ["🐰", "🐢", "🦥"];
+const rankRunners = [
+  { label: "토끼", className: "rabbit" },
+  { label: "거북", className: "turtle" },
+  { label: "늘보", className: "sloth" },
+];
 
 const nodes = {
   raceTrack: document.querySelector("#raceTrack"),
@@ -85,16 +89,17 @@ function renderRaceTrack(rows) {
   const leaderGold = Math.max(...rows.map((team) => team.gold), 1);
   const runnerMarkup = rows
     .map((team, index) => {
-      const position = Math.round(10 + (team.gold / leaderGold) * 56);
+      const position = Math.round(18 + (team.gold / leaderGold) * 52);
+      const runner = rankRunners[index] ?? { label: "주자", className: "runner" };
       return `
         <div
           class="race-runner runner-${index + 1}"
           style="--team-color:${team.color}; --runner-position:${position}%"
         >
           <span class="rank-badge">${index + 1}</span>
-          <span class="runner-emoji" aria-hidden="true">${rankRunners[index] ?? "🏃"}</span>
-          <span class="runner-medal">🥇 ${team.gold}개</span>
-          <span class="runner-name">${team.name}</span>
+          <span class="animal-shape ${runner.className}" aria-hidden="true"><span></span></span>
+          <span class="runner-medal">금 ${team.gold}개</span>
+          <span class="runner-name">${runner.label} · ${team.name}</span>
         </div>
       `;
     })
