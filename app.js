@@ -81,36 +81,38 @@ function medalPill(label, value, className = "") {
 }
 
 function renderRaceTrack(rows) {
-  const leaderScore = Math.max(...rows.map((team) => team.total), 1);
-  nodes.raceTrack.innerHTML = rows
-    .map(
-      (team, index) => {
-        const progress = Math.max(16, Math.round((team.total / leaderScore) * 82));
-        return `
-          <article class="race-lane" style="--team-color:${team.color}; --race-progress:${progress}%">
-            <div class="lane-label">
-              <span class="rank-badge">${index + 1}</span>
-              <div>
-                <h3>${team.name}</h3>
-                <p>${team.mascot} 대표주자</p>
-              </div>
-            </div>
-            <div class="lane-track">
-              <span class="lane-fill"></span>
-              <span class="runner" aria-hidden="true">${team.runner}</span>
-              <span class="finish-flag" aria-hidden="true">🏁</span>
-            </div>
-            <div class="lane-score">
-              ${medalPill("🥇", team.gold)}
-              ${medalPill("🥈", team.silver)}
-              ${medalPill("🥉", team.bronze)}
-              ${medalPill("합계", team.total, "total")}
-            </div>
-          </article>
-        `;
-      },
-    )
+  const leaderGold = Math.max(...rows.map((team) => team.gold), 1);
+  const runnerMarkup = rows
+    .map((team, index) => {
+      const position = Math.round(12 + (team.gold / leaderGold) * 76);
+      return `
+        <div
+          class="race-runner runner-${index + 1}"
+          style="--team-color:${team.color}; --runner-position:${position}%"
+        >
+          <span class="rank-badge">${index + 1}</span>
+          <span class="runner-emoji" aria-hidden="true">${team.runner}</span>
+          <span class="runner-medal">🥇 ${team.gold}개</span>
+          <span class="runner-name">${team.name}</span>
+        </div>
+      `;
+    })
     .join("");
+
+  nodes.raceTrack.innerHTML = `
+    <div class="race-scene">
+      <div class="race-sky" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="race-road" aria-hidden="true">
+        <span class="race-fill"></span>
+        <span class="finish-line">🏁</span>
+      </div>
+      ${runnerMarkup}
+    </div>
+  `;
 }
 
 function renderLeaderboard(rows) {
