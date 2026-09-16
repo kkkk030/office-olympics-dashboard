@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Office Mini Olympics Dashboard</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=3" />
   </head>
   <body>
     <main class="shell">
@@ -31,26 +31,14 @@
         </div>
       </section>
 
-      <section id="teamStrip" class="team-strip" aria-label="팀별 메달 요약"></section>
-
-      <section class="score-strip" aria-label="대회 요약">
-        <div>
-          <span class="label">진행률</span>
-          <strong id="progressLabel">0%</strong>
-          <div class="progress-track"><span id="progressBar"></span></div>
+      <section class="team-overview" aria-label="팀별 메달 현황">
+        <div class="section-title inline compact-title">
+          <div>
+            <p>Team Medal Board</p>
+            <h2>A / B / C 팀 메달 현황</h2>
+          </div>
         </div>
-        <div>
-          <span class="label">완료 종목</span>
-          <strong id="completedCount">0 / 0</strong>
-        </div>
-        <div>
-          <span class="label">현재 1위</span>
-          <strong id="leaderName">-</strong>
-        </div>
-        <div>
-          <span class="label">남은 일정</span>
-          <strong id="remainingLabel">-</strong>
-        </div>
+        <div id="teamStrip" class="team-strip"></div>
       </section>
 
       <section class="layout">
@@ -77,6 +65,26 @@
           <div id="eventGrid" class="event-grid"></div>
         </section>
       </section>
+
+      <section class="score-strip" aria-label="대회 요약">
+        <div>
+          <span class="label">진행률</span>
+          <strong id="progressLabel">0%</strong>
+          <div class="progress-track"><span id="progressBar"></span></div>
+        </div>
+        <div>
+          <span class="label">완료 종목</span>
+          <strong id="completedCount">0 / 0</strong>
+        </div>
+        <div>
+          <span class="label">현재 1위</span>
+          <strong id="leaderName">-</strong>
+        </div>
+        <div>
+          <span class="label">남은 일정</span>
+          <strong id="remainingLabel">-</strong>
+        </div>
+      </section>
     </main>
 
     <template id="eventCardTemplate">
@@ -93,6 +101,6 @@
       </article>
     </template>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=3"></script>
   </body>
 </html>
