@@ -85,39 +85,78 @@ function medalPill(label, value, className = "") {
   return `<span class="count-pill ${className}">${label} ${value}</span>`;
 }
 
+function raceAnimalSvg(type, x, y) {
+  if (type === "rabbit") {
+    return `
+      <g transform="translate(${x} ${y})">
+        <ellipse cx="-7" cy="-25" rx="5" ry="17" fill="#fff8ef" stroke="#172033" stroke-width="2" />
+        <ellipse cx="7" cy="-25" rx="5" ry="17" fill="#fff8ef" stroke="#172033" stroke-width="2" />
+        <circle cx="0" cy="0" r="18" fill="#fff8ef" stroke="#172033" stroke-width="3" />
+        <circle cx="-6" cy="-2" r="2.5" fill="#172033" />
+        <circle cx="6" cy="-2" r="2.5" fill="#172033" />
+        <path d="M -7 8 Q 0 13 7 8" fill="none" stroke="#172033" stroke-width="2" stroke-linecap="round" />
+      </g>
+    `;
+  }
+
+  if (type === "turtle") {
+    return `
+      <g transform="translate(${x} ${y})">
+        <ellipse cx="0" cy="4" rx="22" ry="14" fill="#58bf76" stroke="#172033" stroke-opacity=".18" stroke-width="2" />
+        <circle cx="24" cy="2" r="8" fill="#8fe2a5" stroke="#172033" stroke-opacity=".16" stroke-width="2" />
+        <path d="M -13 4 Q 0 -7 13 4 Q 0 12 -13 4" fill="none" stroke="#ffffff" stroke-opacity=".58" stroke-width="2" />
+        <circle cx="27" cy="0" r="1.8" fill="#172033" />
+      </g>
+    `;
+  }
+
+  return `
+    <g transform="translate(${x} ${y})">
+      <circle cx="0" cy="0" r="18" fill="#9a6a43" stroke="#172033" stroke-opacity=".16" stroke-width="2" />
+      <ellipse cx="-7" cy="-1" rx="6" ry="9" fill="#f2dfc7" />
+      <ellipse cx="7" cy="-1" rx="6" ry="9" fill="#f2dfc7" />
+      <circle cx="-5" cy="-1" r="2" fill="#172033" />
+      <circle cx="5" cy="-1" r="2" fill="#172033" />
+      <path d="M -5 8 Q 0 11 5 8" fill="none" stroke="#5a3823" stroke-width="2" stroke-linecap="round" />
+    </g>
+  `;
+}
+
 function renderRaceTrack(rows) {
   const leaderGold = Math.max(...rows.map((team) => team.gold), 1);
   const runnerMarkup = rows
     .map((team, index) => {
-      const position = Math.round(18 + (team.gold / leaderGold) * 52);
+      const x = Math.round(100 + (team.gold / leaderGold) * 220);
+      const y = [66, 108, 150][index] ?? 150;
+      const labelX = x > 240 ? x - 154 : x + 32;
       const runner = rankRunners[index] ?? { label: "주자", className: "runner" };
       return `
-        <div
-          class="race-runner runner-${index + 1}"
-          style="--team-color:${team.color}; --runner-position:${position}%"
-        >
-          <span class="rank-badge">${index + 1}</span>
-          <span class="animal-shape ${runner.className}" aria-hidden="true"><span></span></span>
-          <span class="runner-medal">금 ${team.gold}개</span>
-          <span class="runner-name">${runner.label} · ${team.name}</span>
-        </div>
+        <g class="svg-runner">
+          <circle cx="${x - 28}" cy="${y - 25}" r="12" fill="${team.color}" />
+          <text x="${x - 28}" y="${y - 21}" text-anchor="middle" class="svg-rank">${index + 1}</text>
+          ${raceAnimalSvg(runner.className, x, y)}
+          <rect x="${labelX}" y="${y - 27}" width="78" height="22" rx="11" fill="#ffffff" stroke="${team.color}" stroke-width="2" />
+          <text x="${labelX + 39}" y="${y - 12}" text-anchor="middle" class="svg-medal">금 ${team.gold}개</text>
+          <rect x="${labelX}" y="${y - 2}" width="116" height="22" rx="11" fill="${team.color}" />
+          <text x="${labelX + 58}" y="${y + 13}" text-anchor="middle" class="svg-name">${runner.label} · ${team.name}</text>
+        </g>
       `;
     })
     .join("");
 
   nodes.raceTrack.innerHTML = `
-    <div class="race-scene">
-      <div class="race-sky" aria-hidden="true">
-        <span></span>
-        <span></span>
-        <span></span>
-      </div>
-      <div class="race-road" aria-hidden="true">
-        <span class="race-fill"></span>
-        <span class="finish-line">🏁</span>
-      </div>
+    <svg class="race-svg" viewBox="0 0 760 190" role="img" aria-label="금메달 수 기준 순위 레이스">
+      <rect x="1" y="1" width="758" height="188" rx="16" fill="#dff2ff" stroke="#bee8dd" stroke-width="2" />
+      <rect x="1" y="92" width="758" height="97" rx="16" fill="#e4f9ed" opacity=".95" />
+      <rect x="56" y="145" width="620" height="26" rx="13" fill="#ffffff" opacity=".9" stroke="#d6dceb" stroke-width="2" stroke-dasharray="6 6" />
+      <rect x="66" y="153" width="530" height="10" rx="5" fill="#dce8ff" />
+      <text x="698" y="164" class="svg-flag">FINISH</text>
+      <circle cx="108" cy="34" r="8" fill="#ffffff" opacity=".9" />
+      <rect x="116" y="29" width="34" height="11" rx="6" fill="#ffffff" opacity=".9" />
+      <circle cx="430" cy="44" r="9" fill="#ffffff" opacity=".9" />
+      <rect x="438" y="38" width="44" height="13" rx="7" fill="#ffffff" opacity=".9" />
       ${runnerMarkup}
-    </div>
+    </svg>
   `;
 }
 
