@@ -126,6 +126,42 @@ function hydrateSavedState(saved) {
   };
 }
 
+function suggestEventIcon(name) {
+  const normalizedName = String(name || "");
+  const iconRules = [
+    ["종이비행기", "✈️"],
+    ["병뚜껑", "🥌"],
+    ["컬링", "🥌"],
+    ["양궁", "🏹"],
+    ["사격", "🎯"],
+    ["볼링", "🎳"],
+    ["탁구", "🏓"],
+    ["스타크래프트", "🎮"],
+    ["팔씨름", "💪"],
+    ["음료", "🥤"],
+    ["딱지", "🟦"],
+    ["제기", "🦶"],
+    ["공기", "✋"],
+    ["카트라이더", "🏎️"],
+    ["포켓볼", "🎱"],
+    ["할리갈리", "🔔"],
+    ["몸으로말해요", "🤸"],
+  ];
+
+  return iconRules.find(([keyword]) => normalizedName.includes(keyword))?.[1] || "🏆";
+}
+
+function eventIcon(event) {
+  const icon = String(event.icon || "").trim();
+  const staleDefaultIcons = new Set(["", "🏆", "🧠", "🏓", "⌨️", "🏀", "🥤", "🎨", "🃏", "🏁"]);
+  return staleDefaultIcons.has(icon) ? suggestEventIcon(event.name) : icon;
+}
+
+function eventWeight(value) {
+  const weight = Number(value);
+  return Number.isFinite(weight) && weight >= 1 ? Math.min(Math.round(weight), 9) : 1;
+}
+
 function readSharedStateFromUrl() {
   const encoded = new URLSearchParams(window.location.search).get("data");
   if (!encoded) return null;
@@ -185,7 +221,8 @@ function normalizeEvent(event) {
     id: event.id || createId(),
     name: String(event.name || "새 종목").trim(),
     day: String(event.day || "Day").trim(),
-    icon: String(event.icon || "🏆").trim().slice(0, 4),
+    icon: eventIcon(event).slice(0, 4),
+    weight: eventWeight(event.weight),
     status: ["pending", "live", "done"].includes(event.status) ? event.status : "pending",
     medals: { ...emptyMedals, ...(event.medals || {}) },
   };
@@ -311,11 +348,12 @@ function medalTable() {
   }));
 
   state.events.forEach((event) => {
+    const weight = eventWeight(event.weight);
     ["gold", "silver", "bronze"].forEach((medal) => {
       const row = rows.find((team) => team.id === event.medals[medal]);
       if (!row) return;
-      row[medal] += 1;
-      row.total += 1;
+      row[medal] += weight;
+      row.total += weight;
     });
   });
 
@@ -469,6 +507,7 @@ function renderEvents() {
     fragment.querySelector(".event-icon").textContent = event.icon;
     fragment.querySelector("h3").textContent = event.name;
     fragment.querySelector(".event-day").textContent = event.day;
+    fragment.querySelector(".event-weight").textContent = `메달 x${event.weight}`;
     status.textContent = statusText(event.status);
     status.classList.add(event.status);
 
@@ -510,6 +549,10 @@ function renderManager() {
           <label>
             아이콘
             <input data-field="icon" type="text" maxlength="4" value="${escapeHtml(event.icon)}" />
+          </label>
+          <label>
+            가중치
+            <input data-field="weight" type="number" min="1" max="9" step="1" value="${event.weight}" />
           </label>
           <label>
             상태
@@ -667,6 +710,9 @@ function updateManagedEvent(event) {
     if (field === "icon") {
       selectedEvent.icon = event.target.value.trim().slice(0, 4) || "🏆";
     }
+    if (field === "weight") {
+      selectedEvent.weight = eventWeight(event.target.value);
+    }
   }
 
   if (event.target.dataset.medal) {
@@ -729,7 +775,8 @@ nodes.addEvent.addEventListener("click", () => {
     id: createId(),
     name,
     day: nodes.newEventDay.value.trim() || `Day ${state.events.length + 1}`,
-    icon: nodes.newEventIcon.value.trim() || "🏆",
+    icon: nodes.newEventIcon.value.trim() || suggestEventIcon(name),
+    weight: 1,
     status: "pending",
     medals: { ...emptyMedals },
   }));
