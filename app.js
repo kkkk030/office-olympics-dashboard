@@ -1,5 +1,6 @@
 const emptyMedals = { gold: "", silver: "", bronze: "" };
-const storageKey = "office-mini-olympics-state-v2";
+const storageKey = "office-mini-olympics-state";
+const legacyStorageKeys = ["office-mini-olympics-state-v2", "office-mini-olympics-state-v1"];
 const adminSessionKey = "office-mini-olympics-admin";
 const adminCredentials = {
   id: "admin",
@@ -73,25 +74,42 @@ function clone(value) {
 
 function loadState() {
   try {
-    const saved = JSON.parse(localStorage.getItem(storageKey));
-    if (!saved || !Array.isArray(saved.events)) return clone(defaultState);
-
-    const baseEvents = defaultState.events.map((event) => {
-      const savedEvent = saved.events.find((item) => item.id === event.id) || {};
-      return normalizeEvent({ ...event, ...savedEvent });
-    });
-    const customEvents = saved.events
-      .filter((event) => event?.id && !defaultState.events.some((defaultEvent) => defaultEvent.id === event.id))
-      .map(normalizeEvent);
-
-    return {
-      teams: clone(defaultState.teams),
-      events: [...baseEvents, ...customEvents],
-      logs: Array.isArray(saved.logs) ? saved.logs : [],
-    };
+    const saved = readSavedState();
+    if (!saved) return clone(defaultState);
+    return hydrateSavedState(saved);
   } catch (error) {
     return clone(defaultState);
   }
+}
+
+function readSavedState() {
+  const keys = [storageKey, ...legacyStorageKeys];
+
+  for (const key of keys) {
+    const value = localStorage.getItem(key);
+    if (!value) continue;
+
+    const saved = JSON.parse(value);
+    if (!saved || !Array.isArray(saved.events)) continue;
+
+    if (key !== storageKey) {
+      localStorage.setItem(storageKey, JSON.stringify(saved));
+    }
+
+    return saved;
+  }
+
+  return null;
+}
+
+function hydrateSavedState(saved) {
+  const savedEvents = saved.events.map(normalizeEvent);
+
+  return {
+    teams: clone(defaultState.teams),
+    events: savedEvents.length ? savedEvents : clone(defaultState.events),
+    logs: Array.isArray(saved.logs) ? saved.logs : [],
+  };
 }
 
 function normalizeEvent(event) {
@@ -117,7 +135,7 @@ function createId() {
 
 function resetState() {
   state = clone(defaultState);
-  localStorage.removeItem(storageKey);
+  [storageKey, ...legacyStorageKeys].forEach((key) => localStorage.removeItem(key));
   render();
 }
 
@@ -594,20 +612,7 @@ nodes.importData.addEventListener("change", async (event) => {
 
   try {
     const imported = JSON.parse(await file.text());
-    const importedEvents = Array.isArray(imported.events) ? imported.events : [];
-    const baseEvents = defaultState.events.map((defaultEvent) => {
-      const importedEvent = importedEvents.find((item) => item.id === defaultEvent.id) || {};
-      return normalizeEvent({ ...defaultEvent, ...importedEvent });
-    });
-    const customEvents = importedEvents
-      .filter((item) => item?.id && !defaultState.events.some((defaultEvent) => defaultEvent.id === item.id))
-      .map(normalizeEvent);
-
-    state = {
-      teams: clone(defaultState.teams),
-      events: [...baseEvents, ...customEvents],
-      logs: Array.isArray(imported.logs) ? imported.logs : [],
-    };
+    state = hydrateSavedState(imported);
     saveState();
     render();
   } catch (error) {
