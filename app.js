@@ -610,6 +610,16 @@ function isAdminAuthed() {
   return sessionStorage.getItem(adminSessionKey) === "true";
 }
 
+function requireAdmin() {
+  if (isAdminAuthed()) return true;
+
+  setView("manage");
+  renderAdminGate();
+  nodes.loginMessage.textContent = "관리자 로그인 후 수정할 수 있습니다.";
+  nodes.adminId.focus();
+  return false;
+}
+
 function renderAdminGate() {
   const authed = isAdminAuthed();
   nodes.adminLogin.hidden = authed;
@@ -637,6 +647,8 @@ nodes.managerList.addEventListener("input", (event) => {
 });
 
 function updateManagedEvent(event) {
+  if (!requireAdmin()) return;
+
   const card = event.target.closest("[data-event-id]");
   const selectedEvent = state.events.find((item) => item.id === card?.dataset.eventId);
   if (!selectedEvent) return;
@@ -672,6 +684,8 @@ function updateManagedEvent(event) {
 nodes.managerList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-delete-event]");
   if (!button) return;
+  if (!requireAdmin()) return;
+
   const selectedEvent = state.events.find((item) => item.id === button.dataset.deleteEvent);
   if (!selectedEvent || !confirm(`${selectedEvent.name} 종목을 삭제할까요?`)) return;
 
@@ -703,6 +717,8 @@ nodes.logoutAdmin.addEventListener("click", () => {
 });
 
 nodes.addEvent.addEventListener("click", () => {
+  if (!requireAdmin()) return;
+
   const name = nodes.newEventName.value.trim();
   if (!name) {
     nodes.newEventName.focus();
@@ -725,6 +741,8 @@ nodes.addEvent.addEventListener("click", () => {
 });
 
 nodes.addLog.addEventListener("click", () => {
+  if (!requireAdmin()) return;
+
   const text = nodes.logText.value.trim();
   if (!text) return;
 
@@ -742,6 +760,7 @@ nodes.addLog.addEventListener("click", () => {
 nodes.logList.addEventListener("click", (event) => {
   const button = event.target.closest("[data-delete-log]");
   if (!button) return;
+  if (!requireAdmin()) return;
 
   state.logs = state.logs.filter((log) => log.id !== button.dataset.deleteLog);
   saveState();
@@ -749,11 +768,14 @@ nodes.logList.addEventListener("click", (event) => {
 });
 
 nodes.resetData.addEventListener("click", () => {
+  if (!requireAdmin()) return;
   if (!confirm("모든 메달과 진행 기록을 초기화할까요?")) return;
   resetState();
 });
 
 nodes.exportData.addEventListener("click", () => {
+  if (!requireAdmin()) return;
+
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -765,14 +787,18 @@ nodes.exportData.addEventListener("click", () => {
 });
 
 nodes.loadRemoteData.addEventListener("click", () => {
+  if (!requireAdmin()) return;
   loadRemoteState();
 });
 
 nodes.saveRemoteData.addEventListener("click", () => {
+  if (!requireAdmin()) return;
   saveRemoteState();
 });
 
 nodes.shareData.addEventListener("click", async () => {
+  if (!requireAdmin()) return;
+
   const url = new URL(window.location.href);
   url.searchParams.set("data", encodeStateForUrl(state));
   url.hash = "";
@@ -786,6 +812,11 @@ nodes.shareData.addEventListener("click", async () => {
 });
 
 nodes.importData.addEventListener("change", async (event) => {
+  if (!requireAdmin()) {
+    event.target.value = "";
+    return;
+  }
+
   const [file] = event.target.files;
   if (!file) return;
 
