@@ -1,26 +1,28 @@
 const emptyMedals = { gold: "", silver: "", bronze: "" };
-const commentsApiUrl = "https://api.github.com/repos/kkkk030/office-olympics-dashboard/issues/1/comments?per_page=30";
+const storageKey = "office-mini-olympics-state-v2";
 
 const defaultState = {
   teams: [
-    { id: "a", name: "시온팀", color: "#22b98f", mascot: "토끼", runner: "🐰" },
-    { id: "b", name: "나영팀", color: "#ff8f6b", mascot: "거북이", runner: "🐢" },
-    { id: "c", name: "상윤팀", color: "#4d8dff", mascot: "나무늘보", runner: "🦥" },
+    { id: "a", name: "시온팀", color: "#22b98f", mascot: "토끼" },
+    { id: "b", name: "나영팀", color: "#ff8f6b", mascot: "거북이" },
+    { id: "c", name: "상윤팀", color: "#4d8dff", mascot: "나무늘보" },
   ],
   events: [
-    { id: "quiz", name: "스피드 퀴즈", day: "Day 1", icon: "🧠", status: "done", medals: { gold: "a", silver: "c", bronze: "b" } },
-    { id: "pingpong", name: "탁구 랠리", day: "Day 2", icon: "🏓", status: "done", medals: { gold: "c", silver: "a", bronze: "b" } },
-    { id: "typing", name: "타자왕", day: "Day 3", icon: "⌨️", status: "live", medals: { ...emptyMedals } },
+    { id: "quiz", name: "스피드 퀴즈", day: "Day 1", icon: "🧠", status: "pending", medals: { ...emptyMedals } },
+    { id: "pingpong", name: "탁구 랠리", day: "Day 2", icon: "🏓", status: "pending", medals: { ...emptyMedals } },
+    { id: "typing", name: "타자왕", day: "Day 3", icon: "⌨️", status: "pending", medals: { ...emptyMedals } },
     { id: "basket", name: "미니 농구", day: "Day 4", icon: "🏀", status: "pending", medals: { ...emptyMedals } },
     { id: "relay", name: "컵 릴레이", day: "Day 5", icon: "🥤", status: "pending", medals: { ...emptyMedals } },
     { id: "drawing", name: "그림 전달", day: "Day 6", icon: "🎨", status: "pending", medals: { ...emptyMedals } },
     { id: "memory", name: "메모리 게임", day: "Day 7", icon: "🃏", status: "pending", medals: { ...emptyMedals } },
     { id: "final", name: "파이널 챌린지", day: "Day 10", icon: "🏁", status: "pending", medals: { ...emptyMedals } },
   ],
+  logs: [],
 };
 
-const state = structuredClone(defaultState);
+let state = loadState();
 let activeFilter = "all";
+
 const rankRunners = [
   { label: "토끼", className: "rabbit" },
   { label: "거북", className: "turtle" },
@@ -28,6 +30,9 @@ const rankRunners = [
 ];
 
 const nodes = {
+  dashboardView: document.querySelector("#dashboardView"),
+  manageView: document.querySelector("#manageView"),
+  viewTabs: document.querySelectorAll(".view-tab"),
   raceTrack: document.querySelector("#raceTrack"),
   progressLabel: document.querySelector("#progressLabel"),
   progressBar: document.querySelector("#progressBar"),
@@ -36,10 +41,58 @@ const nodes = {
   remainingLabel: document.querySelector("#remainingLabel"),
   leaderboard: document.querySelector("#leaderboard"),
   eventGrid: document.querySelector("#eventGrid"),
-  commentList: document.querySelector("#commentList"),
-  refreshComments: document.querySelector("#refreshComments"),
+  managerList: document.querySelector("#managerList"),
+  logEvent: document.querySelector("#logEvent"),
+  logText: document.querySelector("#logText"),
+  logList: document.querySelector("#logList"),
+  addLog: document.querySelector("#addLog"),
+  exportData: document.querySelector("#exportData"),
+  importData: document.querySelector("#importData"),
+  resetData: document.querySelector("#resetData"),
   template: document.querySelector("#eventCardTemplate"),
 };
+
+function clone(value) {
+  return structuredClone(value);
+}
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey));
+    if (!saved || !Array.isArray(saved.events)) return clone(defaultState);
+
+    return {
+      teams: clone(defaultState.teams),
+      events: defaultState.events.map((event) => {
+        const savedEvent = saved.events.find((item) => item.id === event.id) || {};
+        return {
+          ...event,
+          status: ["pending", "live", "done"].includes(savedEvent.status) ? savedEvent.status : event.status,
+          medals: { ...emptyMedals, ...(savedEvent.medals || {}) },
+        };
+      }),
+      logs: Array.isArray(saved.logs) ? saved.logs : [],
+    };
+  } catch (error) {
+    return clone(defaultState);
+  }
+}
+
+function saveState() {
+  localStorage.setItem(storageKey, JSON.stringify(state));
+}
+
+function createId() {
+  return globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function resetState() {
+  state = clone(defaultState);
+  localStorage.removeItem(storageKey);
+  render();
+}
 
 function getTeam(teamId) {
   return state.teams.find((team) => team.id === teamId);
@@ -80,7 +133,7 @@ function renderSummary(rows) {
   nodes.progressLabel.textContent = `${progress}%`;
   nodes.progressBar.style.width = `${progress}%`;
   nodes.completedCount.textContent = `${done} / ${state.events.length}`;
-  nodes.leaderName.textContent = rows[0]?.name ?? "-";
+  nodes.leaderName.textContent = rows.some((row) => row.total > 0) ? rows[0]?.name : "-";
   nodes.remainingLabel.textContent = `${state.events.length - done}개`;
 }
 
@@ -133,6 +186,7 @@ function renderRaceTrack(rows) {
       const y = [66, 108, 150][index] ?? 150;
       const labelX = x > 240 ? x - 154 : x + 32;
       const runner = rankRunners[index] ?? { label: "주자", className: "runner" };
+
       return `
         <g class="svg-runner">
           <circle cx="${x - 28}" cy="${y - 25}" r="12" fill="${team.color}" />
@@ -223,14 +277,83 @@ function renderEvents() {
   });
 }
 
-function plainTextFromMarkdown(value) {
-  return value
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/[*_~>]/g, "")
-    .trim();
+function teamOptions(selectedTeamId) {
+  return [
+    `<option value="">미정</option>`,
+    ...state.teams.map((team) => `<option value="${team.id}" ${team.id === selectedTeamId ? "selected" : ""}>${team.name}</option>`),
+  ].join("");
+}
+
+function renderManager() {
+  nodes.managerList.innerHTML = state.events
+    .map(
+      (event) => `
+        <article class="manager-card" data-event-id="${event.id}">
+          <div class="manager-title">
+            <span class="event-icon">${event.icon}</span>
+            <div>
+              <h3>${event.name}</h3>
+              <p>${event.day}</p>
+            </div>
+          </div>
+          <label>
+            상태
+            <select data-field="status">
+              <option value="pending" ${event.status === "pending" ? "selected" : ""}>진행 전</option>
+              <option value="live" ${event.status === "live" ? "selected" : ""}>진행 중</option>
+              <option value="done" ${event.status === "done" ? "selected" : ""}>완료</option>
+            </select>
+          </label>
+          <label>
+            금
+            <select data-medal="gold">${teamOptions(event.medals.gold)}</select>
+          </label>
+          <label>
+            은
+            <select data-medal="silver">${teamOptions(event.medals.silver)}</select>
+          </label>
+          <label>
+            동
+            <select data-medal="bronze">${teamOptions(event.medals.bronze)}</select>
+          </label>
+        </article>
+      `,
+    )
+    .join("");
+
+  nodes.logEvent.innerHTML = state.events.map((event) => `<option value="${event.id}">${event.name}</option>`).join("");
+}
+
+function renderLogs() {
+  if (!state.logs.length) {
+    nodes.logList.innerHTML = `<p class="log-empty">아직 기록된 진행 사항이 없습니다.</p>`;
+    return;
+  }
+
+  nodes.logList.innerHTML = state.logs
+    .slice()
+    .reverse()
+    .map((log) => {
+      const event = state.events.find((item) => item.id === log.eventId);
+      const date = new Intl.DateTimeFormat("ko-KR", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(log.createdAt));
+
+      return `
+        <article class="log-card">
+          <div class="log-meta">
+            <strong>${event ? event.name : "전체"}</strong>
+            <span>${date}</span>
+          </div>
+          <p>${escapeHtml(log.text)}</p>
+          <button class="ghost small" type="button" data-delete-log="${log.id}">삭제</button>
+        </article>
+      `;
+    })
+    .join("");
 }
 
 function escapeHtml(value) {
@@ -243,67 +366,23 @@ function escapeHtml(value) {
   })[character]);
 }
 
-function renderCommentState(message) {
-  nodes.commentList.innerHTML = `<p class="comment-state">${message}</p>`;
-}
-
-function renderComments(comments) {
-  if (!comments.length) {
-    renderCommentState("아직 댓글이 없습니다. 첫 응원을 남겨주세요.");
-    return;
-  }
-
-  nodes.commentList.innerHTML = comments
-    .slice(-12)
-    .reverse()
-    .map((comment, index) => {
-      const body = escapeHtml(plainTextFromMarkdown(comment.body || ""));
-      const date = new Intl.DateTimeFormat("ko-KR", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(new Date(comment.created_at));
-
-      return `
-        <article class="comment-card">
-          <div class="comment-meta">
-            <strong>익명 응원단 ${comments.length - index}</strong>
-            <span>${date}</span>
-          </div>
-          <p>${body || "응원 메시지"}</p>
-        </article>
-      `;
-    })
-    .join("");
-}
-
-async function loadComments() {
-  if (!nodes.commentList) return;
-
-  renderCommentState("댓글을 불러오는 중입니다.");
-  nodes.refreshComments?.setAttribute("disabled", "");
-
-  try {
-    const response = await fetch(commentsApiUrl, {
-      headers: { Accept: "application/vnd.github+json" },
-    });
-
-    if (!response.ok) throw new Error("comment fetch failed");
-    renderComments(await response.json());
-  } catch (error) {
-    renderCommentState("댓글을 불러오지 못했습니다. 잠시 후 새로고침해 주세요.");
-  } finally {
-    nodes.refreshComments?.removeAttribute("disabled");
-  }
-}
-
 function render() {
   const rows = medalTable();
   renderRaceTrack(rows);
   renderSummary(rows);
   renderLeaderboard(rows);
   renderEvents();
+  renderManager();
+  renderLogs();
+}
+
+function setView(view) {
+  const isManage = view === "manage";
+  nodes.dashboardView.classList.toggle("active", !isManage);
+  nodes.manageView.classList.toggle("active", isManage);
+  nodes.viewTabs.forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === view);
+  });
 }
 
 document.querySelectorAll(".filter").forEach((button) => {
@@ -314,7 +393,92 @@ document.querySelectorAll(".filter").forEach((button) => {
   });
 });
 
-nodes.refreshComments?.addEventListener("click", loadComments);
+nodes.viewTabs.forEach((button) => {
+  button.addEventListener("click", () => setView(button.dataset.view));
+});
+
+nodes.managerList.addEventListener("change", (event) => {
+  const card = event.target.closest("[data-event-id]");
+  const selectedEvent = state.events.find((item) => item.id === card?.dataset.eventId);
+  if (!selectedEvent) return;
+
+  if (event.target.dataset.field === "status") {
+    selectedEvent.status = event.target.value;
+  }
+
+  if (event.target.dataset.medal) {
+    selectedEvent.medals[event.target.dataset.medal] = event.target.value;
+  }
+
+  saveState();
+  render();
+});
+
+nodes.addLog.addEventListener("click", () => {
+  const text = nodes.logText.value.trim();
+  if (!text) return;
+
+  state.logs.push({
+    id: createId(),
+    eventId: nodes.logEvent.value,
+    text,
+    createdAt: new Date().toISOString(),
+  });
+  nodes.logText.value = "";
+  saveState();
+  renderLogs();
+});
+
+nodes.logList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-delete-log]");
+  if (!button) return;
+
+  state.logs = state.logs.filter((log) => log.id !== button.dataset.deleteLog);
+  saveState();
+  renderLogs();
+});
+
+nodes.resetData.addEventListener("click", () => {
+  if (!confirm("모든 메달과 진행 기록을 초기화할까요?")) return;
+  resetState();
+});
+
+nodes.exportData.addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = `office-olympics-${new Date().toISOString().slice(0, 10)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+nodes.importData.addEventListener("change", async (event) => {
+  const [file] = event.target.files;
+  if (!file) return;
+
+  try {
+    const imported = JSON.parse(await file.text());
+    state = {
+      teams: clone(defaultState.teams),
+      events: defaultState.events.map((defaultEvent) => {
+        const importedEvent = imported.events?.find((item) => item.id === defaultEvent.id) || {};
+        return {
+          ...defaultEvent,
+          status: ["pending", "live", "done"].includes(importedEvent.status) ? importedEvent.status : defaultEvent.status,
+          medals: { ...emptyMedals, ...(importedEvent.medals || {}) },
+        };
+      }),
+      logs: Array.isArray(imported.logs) ? imported.logs : [],
+    };
+    saveState();
+    render();
+  } catch (error) {
+    alert("불러오기 파일을 읽지 못했습니다.");
+  } finally {
+    event.target.value = "";
+  }
+});
 
 render();
-loadComments();
