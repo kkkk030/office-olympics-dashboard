@@ -26,8 +26,15 @@ const defaultState = {
   logs: [],
 };
 
-let state = loadState();
+const sharedState = readSharedStateFromUrl();
+let state = sharedState ? hydrateSavedState(sharedState) : loadState();
 let activeFilter = "all";
+let sharedStateImported = Boolean(sharedState);
+
+if (sharedStateImported) {
+  saveState();
+  clearSharedStateFromUrl();
+}
 
 const rankRunners = [
   { label: "토끼", className: "rabbit" },
@@ -63,6 +70,7 @@ const nodes = {
   newEventDay: document.querySelector("#newEventDay"),
   newEventIcon: document.querySelector("#newEventIcon"),
   exportData: document.querySelector("#exportData"),
+  shareData: document.querySelector("#shareData"),
   importData: document.querySelector("#importData"),
   resetData: document.querySelector("#resetData"),
   template: document.querySelector("#eventCardTemplate"),
@@ -110,6 +118,60 @@ function hydrateSavedState(saved) {
     events: savedEvents.length ? savedEvents : clone(defaultState.events),
     logs: Array.isArray(saved.logs) ? saved.logs : [],
   };
+}
+
+function readSharedStateFromUrl() {
+  const encoded = new URLSearchParams(window.location.search).get("data");
+  if (!encoded) return null;
+
+  try {
+    const decoded = JSON.parse(decodeStateForUrl(encoded));
+    return decoded && Array.isArray(decoded.events) ? decoded : null;
+  } catch (error) {
+    window.alert("공유 링크 데이터를 읽지 못했습니다.");
+    return null;
+  }
+}
+
+function clearSharedStateFromUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("data");
+  window.history.replaceState({}, "", url.toString());
+}
+
+function encodeStateForUrl(value) {
+  const bytes = new TextEncoder().encode(JSON.stringify(value));
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeStateForUrl(value) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+  const binary = atob(padded);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "");
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand("copy");
+  input.remove();
 }
 
 function normalizeEvent(event) {
@@ -606,6 +668,19 @@ nodes.exportData.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+nodes.shareData.addEventListener("click", async () => {
+  const url = new URL(window.location.href);
+  url.searchParams.set("data", encodeStateForUrl(state));
+  url.hash = "";
+
+  try {
+    await copyText(url.toString());
+    alert("공유 링크를 복사했습니다. 모바일에서 열면 현재 데이터가 그 기기에도 저장됩니다.");
+  } catch (error) {
+    prompt("이 링크를 복사해서 모바일에서 열어주세요.", url.toString());
+  }
+});
+
 nodes.importData.addEventListener("change", async (event) => {
   const [file] = event.target.files;
   if (!file) return;
@@ -623,3 +698,7 @@ nodes.importData.addEventListener("change", async (event) => {
 });
 
 render();
+
+if (sharedStateImported) {
+  alert("공유 링크 데이터를 이 기기에 저장했습니다.");
+}
