@@ -2,6 +2,9 @@ const emptyMedals = { gold: "", silver: "", bronze: "" };
 const storageKey = "office-mini-olympics-state";
 const legacyStorageKeys = ["office-mini-olympics-state-v2", "office-mini-olympics-state-v1"];
 const adminSessionKey = "office-mini-olympics-admin";
+const supabaseUrl = "https://jgofoypdffjzhqnvktyy.supabase.co";
+const supabasePublishableKey = "sb_publishable_YM5K-4tNlfCpDWXq_s4LdA_yYfzmrPf";
+const remoteStateId = "main";
 const adminCredentials = {
   id: "admin",
   password: "olympic2026",
@@ -66,6 +69,8 @@ const nodes = {
   logList: document.querySelector("#logList"),
   addLog: document.querySelector("#addLog"),
   addEvent: document.querySelector("#addEvent"),
+  loadRemoteData: document.querySelector("#loadRemoteData"),
+  saveRemoteData: document.querySelector("#saveRemoteData"),
   newEventName: document.querySelector("#newEventName"),
   newEventDay: document.querySelector("#newEventDay"),
   newEventIcon: document.querySelector("#newEventIcon"),
@@ -73,6 +78,7 @@ const nodes = {
   shareData: document.querySelector("#shareData"),
   importData: document.querySelector("#importData"),
   resetData: document.querySelector("#resetData"),
+  syncStatus: document.querySelector("#syncStatus"),
   template: document.querySelector("#eventCardTemplate"),
 };
 
@@ -187,6 +193,96 @@ function normalizeEvent(event) {
 
 function saveState() {
   localStorage.setItem(storageKey, JSON.stringify(state));
+}
+
+function remoteHeaders(extraHeaders = {}) {
+  return {
+    apikey: supabasePublishableKey,
+    Authorization: `Bearer ${supabasePublishableKey}`,
+    ...extraHeaders,
+  };
+}
+
+function setSyncStatus(message, type = "") {
+  nodes.syncStatus.textContent = message;
+  nodes.syncStatus.classList.toggle("success", type === "success");
+  nodes.syncStatus.classList.toggle("error", type === "error");
+}
+
+async function fetchRemoteState() {
+  const url = `${supabaseUrl}/rest/v1/dashboard_state?id=eq.${remoteStateId}&select=state,updated_at`;
+  const response = await fetch(url, {
+    headers: remoteHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`서버 불러오기 실패: ${response.status}`);
+  }
+
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+async function loadRemoteState({ showEmptyMessage = true } = {}) {
+  setSyncStatus("서버 데이터를 불러오는 중입니다.");
+
+  try {
+    const row = await fetchRemoteState();
+    if (!row?.state) {
+      if (showEmptyMessage) setSyncStatus("아직 서버에 저장된 데이터가 없습니다. 현재 화면을 서버 저장할 수 있습니다.");
+      return false;
+    }
+
+    state = hydrateSavedState(row.state);
+    saveState();
+    render();
+    setSyncStatus(`서버 데이터를 불러왔습니다. 마지막 저장: ${formatDateTime(row.updated_at)}`, "success");
+    return true;
+  } catch (error) {
+    setSyncStatus("서버 데이터를 불러오지 못했습니다. Supabase 테이블/정책 설정을 확인해주세요.", "error");
+    return false;
+  }
+}
+
+async function saveRemoteState() {
+  setSyncStatus("서버에 저장하는 중입니다.");
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/dashboard_state?on_conflict=id`, {
+      method: "POST",
+      headers: remoteHeaders({
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates,return=representation",
+      }),
+      body: JSON.stringify({
+        id: remoteStateId,
+        state,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`서버 저장 실패: ${response.status}`);
+    }
+
+    const [row] = await response.json();
+    setSyncStatus(`서버 저장 완료. 마지막 저장: ${formatDateTime(row?.updated_at)}`, "success");
+    return true;
+  } catch (error) {
+    setSyncStatus("서버 저장에 실패했습니다. Supabase 테이블/정책 설정을 확인해주세요.", "error");
+    return false;
+  }
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
 function createId() {
@@ -668,6 +764,14 @@ nodes.exportData.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+nodes.loadRemoteData.addEventListener("click", () => {
+  loadRemoteState();
+});
+
+nodes.saveRemoteData.addEventListener("click", () => {
+  saveRemoteState();
+});
+
 nodes.shareData.addEventListener("click", async () => {
   const url = new URL(window.location.href);
   url.searchParams.set("data", encodeStateForUrl(state));
@@ -698,6 +802,8 @@ nodes.importData.addEventListener("change", async (event) => {
 });
 
 render();
+
+loadRemoteState({ showEmptyMessage: false });
 
 if (sharedStateImported) {
   alert("공유 링크 데이터를 이 기기에 저장했습니다.");

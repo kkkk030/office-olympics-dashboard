@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Office Mini Olympics Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=17" />
+    <link rel="stylesheet" href="styles.css?v=18" />
   </head>
   <body>
     <main class="shell">
@@ -121,12 +121,15 @@
               </div>
               <div class="toolbar">
                 <button id="logoutAdmin" class="ghost" type="button">로그아웃</button>
+                <button id="loadRemoteData" class="ghost" type="button">서버 불러오기</button>
+                <button id="saveRemoteData" class="primary" type="button">서버 저장</button>
                 <button id="shareData" class="ghost" type="button">공유 링크</button>
                 <button id="exportData" class="ghost" type="button">내보내기</button>
                 <label class="ghost file-btn">불러오기<input id="importData" type="file" accept="application/json" /></label>
                 <button id="resetData" class="danger" type="button">초기화</button>
               </div>
             </div>
+            <p id="syncStatus" class="sync-status" aria-live="polite">서버 연결을 확인하는 중입니다.</p>
             <div id="managerList" class="manager-list"></div>
           </div>
 
@@ -192,6 +195,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=17"></script>
+    <script src="app.js?v=18"></script>
   </body>
 </html>

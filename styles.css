@@ -859,6 +859,22 @@ h1 {
   font-weight: 900;
 }
 
+.sync-status {
+  min-height: 22px;
+  margin: 10px 0 14px;
+  color: #5a6378;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.sync-status.success {
+  color: var(--green);
+}
+
+.sync-status.error {
+  color: var(--red);
+}
+
 .manager-list {
   display: grid;
   gap: 10px;
