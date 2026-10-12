@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Office Mini Olympics Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=20" />
+    <link rel="stylesheet" href="styles.css?v=21" />
   </head>
   <body>
     <main class="shell">
@@ -15,6 +15,7 @@
           <p class="subcopy">시온팀, 나영팀, 상윤팀의 메달과 순위 레이스 현황판</p>
           <div class="view-tabs" role="tablist" aria-label="페이지 전환">
             <button class="view-tab active" type="button" data-view="dashboard">현황판</button>
+            <button class="view-tab" type="button" data-view="predict">예측전</button>
             <button class="view-tab" type="button" data-view="manage">관리</button>
           </div>
         </div>
@@ -91,6 +92,41 @@
           </div>
         </section>
       </div>
+
+      <section id="predictView" class="view-panel predict-view" aria-label="메달 예측전">
+        <section class="control-panel">
+          <div class="section-title inline">
+            <div>
+              <p>Medal Pick'em</p>
+              <h2>메달 예측전</h2>
+            </div>
+            <button id="submitPrediction" class="primary" type="button">예측 제출</button>
+          </div>
+          <div class="prediction-form">
+            <label>
+              참가자 이름
+              <input id="predictionName" type="text" placeholder="예: 홍길동" />
+            </label>
+            <label>
+              회차
+              <select id="predictionRound">
+                <option value="round1">1차 · Day 1~5</option>
+                <option value="round2">2차 · Day 6~9</option>
+              </select>
+            </label>
+          </div>
+          <p id="predictionMessage" class="sync-status" aria-live="polite"></p>
+          <div id="predictionEvents" class="prediction-events"></div>
+        </section>
+
+        <section class="control-panel">
+          <div class="section-title">
+            <p>Pick'em Ranking</p>
+            <h2>예측 순위표</h2>
+          </div>
+          <div id="predictionLeaderboard" class="prediction-leaderboard"></div>
+        </section>
+      </section>
 
       <section id="manageView" class="view-panel manage-view" aria-label="대회 관리">
         <form id="adminLogin" class="control-panel login-panel">
@@ -196,6 +232,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=20"></script>
+    <script src="app.js?v=21"></script>
   </body>
 </html>

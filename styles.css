@@ -849,7 +849,8 @@ h1 {
 }
 
 .login-grid,
-.event-builder {
+.event-builder,
+.prediction-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: 12px;
@@ -882,6 +883,69 @@ h1 {
 .manager-list {
   display: grid;
   gap: 10px;
+}
+
+.prediction-events,
+.prediction-leaderboard {
+  display: grid;
+  gap: 10px;
+}
+
+.prediction-card {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.4fr) repeat(3, minmax(120px, 1fr));
+  gap: 10px;
+  align-items: end;
+  padding: 14px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.prediction-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.prediction-title h3 {
+  margin: 0 0 3px;
+  font-size: 1rem;
+}
+
+.prediction-title p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.prediction-rank {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.prediction-rank h3,
+.prediction-rank p {
+  margin: 0;
+}
+
+.prediction-rank p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.prediction-rank strong {
+  color: var(--blue);
+  font-size: 1.25rem;
 }
 
 .manager-card {
@@ -1159,7 +1223,9 @@ input {
   .manager-card,
   .log-editor,
   .login-grid,
-  .event-builder {
+  .event-builder,
+  .prediction-form,
+  .prediction-card {
     grid-template-columns: 1fr;
   }
 
@@ -1205,7 +1271,9 @@ input {
   .log-editor,
   .log-list,
   .login-grid,
-  .event-builder {
+  .event-builder,
+  .prediction-form,
+  .prediction-card {
     grid-template-columns: 1fr;
   }
 

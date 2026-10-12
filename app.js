@@ -27,6 +27,7 @@ const defaultState = {
     { id: "final", name: "파이널 챌린지", day: "Day 10", icon: "🏁", status: "pending", medals: { ...emptyMedals } },
   ],
   logs: [],
+  predictions: [],
 };
 
 const sharedState = readSharedStateFromUrl();
@@ -47,6 +48,7 @@ const rankRunners = [
 
 const nodes = {
   dashboardView: document.querySelector("#dashboardView"),
+  predictView: document.querySelector("#predictView"),
   manageView: document.querySelector("#manageView"),
   viewTabs: document.querySelectorAll(".view-tab"),
   adminLogin: document.querySelector("#adminLogin"),
@@ -69,6 +71,12 @@ const nodes = {
   logList: document.querySelector("#logList"),
   addLog: document.querySelector("#addLog"),
   addEvent: document.querySelector("#addEvent"),
+  predictionName: document.querySelector("#predictionName"),
+  predictionRound: document.querySelector("#predictionRound"),
+  predictionEvents: document.querySelector("#predictionEvents"),
+  predictionLeaderboard: document.querySelector("#predictionLeaderboard"),
+  predictionMessage: document.querySelector("#predictionMessage"),
+  submitPrediction: document.querySelector("#submitPrediction"),
   loadRemoteData: document.querySelector("#loadRemoteData"),
   saveRemoteData: document.querySelector("#saveRemoteData"),
   newEventName: document.querySelector("#newEventName"),
@@ -123,6 +131,19 @@ function hydrateSavedState(saved) {
     teams: clone(defaultState.teams),
     events: savedEvents.length ? savedEvents : clone(defaultState.events),
     logs: Array.isArray(saved.logs) ? saved.logs : [],
+    predictions: Array.isArray(saved.predictions) ? saved.predictions.map(normalizePrediction) : [],
+  };
+}
+
+function normalizePrediction(prediction) {
+  return {
+    id: prediction.id || createId(),
+    participant: String(prediction.participant || "").trim(),
+    participantKey: String(prediction.participantKey || prediction.participant || "").trim().toLowerCase(),
+    round: ["round1", "round2"].includes(prediction.round) ? prediction.round : "round1",
+    picks: prediction.picks && typeof prediction.picks === "object" ? prediction.picks : {},
+    createdAt: prediction.createdAt || new Date().toISOString(),
+    updatedAt: prediction.updatedAt || new Date().toISOString(),
   };
 }
 
@@ -615,6 +636,137 @@ function renderLogs() {
     .join("");
 }
 
+function dayNumber(event) {
+  const [, number] = String(event.day || "").match(/(\d+)/) || [];
+  return Number(number || 0);
+}
+
+function predictionRoundEvents(round) {
+  return state.events.filter((event) => {
+    const day = dayNumber(event);
+    if (round === "round1") return day >= 1 && day <= 5;
+    return day >= 6 && day <= 9;
+  });
+}
+
+function predictionRoundLabel(round) {
+  return round === "round1" ? "1차 · Day 1~5" : "2차 · Day 6~9";
+}
+
+function selectedPrediction() {
+  const participantKey = nodes.predictionName.value.trim().toLowerCase();
+  const round = nodes.predictionRound.value;
+  if (!participantKey) return null;
+  return state.predictions.find((prediction) => prediction.participantKey === participantKey && prediction.round === round);
+}
+
+function renderPredictionEvents() {
+  const round = nodes.predictionRound.value || "round1";
+  const existingPrediction = selectedPrediction();
+  const events = predictionRoundEvents(round);
+
+  if (!events.length) {
+    nodes.predictionEvents.innerHTML = `<p class="log-empty">해당 회차에 등록된 종목이 없습니다.</p>`;
+    return;
+  }
+
+  nodes.predictionEvents.innerHTML = events
+    .map((event) => {
+      const pick = existingPrediction?.picks?.[event.id] || {};
+
+      return `
+        <article class="prediction-card" data-prediction-event="${event.id}">
+          <div class="prediction-title">
+            <span class="event-icon">${escapeHtml(event.icon)}</span>
+            <div>
+              <h3>${escapeHtml(event.name)}</h3>
+              <p>${escapeHtml(event.day)}</p>
+            </div>
+          </div>
+          <label>
+            금 · 3점
+            <select data-predict-medal="gold">${teamOptions(pick.gold)}</select>
+          </label>
+          <label>
+            은 · 2점
+            <select data-predict-medal="silver">${teamOptions(pick.silver)}</select>
+          </label>
+          <label>
+            동 · 1점
+            <select data-predict-medal="bronze">${teamOptions(pick.bronze)}</select>
+          </label>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function scorePrediction(prediction) {
+  let score = 0;
+  let goldHits = 0;
+  let silverHits = 0;
+  let bronzeHits = 0;
+
+  state.events.forEach((event) => {
+    const pick = prediction.picks?.[event.id] || {};
+    if (event.medals.gold && pick.gold === event.medals.gold) {
+      score += 3;
+      goldHits += 1;
+    }
+    if (event.medals.silver && pick.silver === event.medals.silver) {
+      score += 2;
+      silverHits += 1;
+    }
+    if (event.medals.bronze && pick.bronze === event.medals.bronze) {
+      score += 1;
+      bronzeHits += 1;
+    }
+  });
+
+  return { score, goldHits, silverHits, bronzeHits, totalHits: goldHits + silverHits + bronzeHits };
+}
+
+function renderPredictionLeaderboard() {
+  if (!state.predictions.length) {
+    nodes.predictionLeaderboard.innerHTML = `<p class="log-empty">아직 제출된 예측이 없습니다.</p>`;
+    return;
+  }
+
+  const rows = state.predictions
+    .map((prediction) => ({
+      ...prediction,
+      ...scorePrediction(prediction),
+    }))
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        b.goldHits - a.goldHits ||
+        b.silverHits - a.silverHits ||
+        b.bronzeHits - a.bronzeHits ||
+        a.participant.localeCompare(b.participant, "ko"),
+    );
+
+  nodes.predictionLeaderboard.innerHTML = rows
+    .map(
+      (row, index) => `
+        <article class="prediction-rank">
+          <div class="team-rank">${index + 1}</div>
+          <div>
+            <h3>${escapeHtml(row.participant)}</h3>
+            <p>${predictionRoundLabel(row.round)} · 적중 ${row.totalHits}개</p>
+          </div>
+          <strong>${row.score}점</strong>
+        </article>
+      `,
+    )
+    .join("");
+}
+
+function renderPredictions() {
+  renderPredictionEvents();
+  renderPredictionLeaderboard();
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
@@ -633,18 +785,19 @@ function render() {
   renderEvents();
   renderManager();
   renderLogs();
+  renderPredictions();
   renderAdminGate();
 }
 
 function setView(view) {
-  const isManage = view === "manage";
-  nodes.dashboardView.classList.toggle("active", !isManage);
-  nodes.manageView.classList.toggle("active", isManage);
+  nodes.dashboardView.classList.toggle("active", view === "dashboard");
+  nodes.predictView.classList.toggle("active", view === "predict");
+  nodes.manageView.classList.toggle("active", view === "manage");
   nodes.viewTabs.forEach((button) => {
     button.classList.toggle("active", button.dataset.view === view);
   });
 
-  if (isManage && !isAdminAuthed()) {
+  if (view === "manage" && !isAdminAuthed()) {
     nodes.adminId.focus();
   }
 }
@@ -802,6 +955,71 @@ nodes.addLog.addEventListener("click", () => {
   nodes.logText.value = "";
   saveState();
   renderLogs();
+});
+
+nodes.predictionRound.addEventListener("change", () => {
+  renderPredictionEvents();
+});
+
+nodes.predictionName.addEventListener("input", () => {
+  renderPredictionEvents();
+});
+
+nodes.submitPrediction.addEventListener("click", async () => {
+  const participant = nodes.predictionName.value.trim();
+  const round = nodes.predictionRound.value;
+
+  if (!participant) {
+    nodes.predictionName.focus();
+    nodes.predictionMessage.textContent = "참가자 이름을 입력해주세요.";
+    nodes.predictionMessage.classList.add("error");
+    nodes.predictionMessage.classList.remove("success");
+    return;
+  }
+
+  const picks = {};
+  nodes.predictionEvents.querySelectorAll("[data-prediction-event]").forEach((card) => {
+    const eventId = card.dataset.predictionEvent;
+    picks[eventId] = {};
+    card.querySelectorAll("[data-predict-medal]").forEach((select) => {
+      picks[eventId][select.dataset.predictMedal] = select.value;
+    });
+  });
+
+  const nextPrediction = normalizePrediction({
+    participant,
+    participantKey: participant.toLowerCase(),
+    round,
+    picks,
+    updatedAt: new Date().toISOString(),
+  });
+
+  try {
+    const row = await fetchRemoteState();
+    if (row?.state) state = hydrateSavedState(row.state);
+  } catch (error) {
+    // Local state still accepts the prediction if the latest remote read fails.
+  }
+
+  const existingIndex = state.predictions.findIndex(
+    (prediction) => prediction.participantKey === nextPrediction.participantKey && prediction.round === round,
+  );
+
+  if (existingIndex >= 0) {
+    nextPrediction.id = state.predictions[existingIndex].id;
+    nextPrediction.createdAt = state.predictions[existingIndex].createdAt;
+    state.predictions[existingIndex] = nextPrediction;
+  } else {
+    state.predictions.push(nextPrediction);
+  }
+
+  saveState();
+  renderPredictions();
+
+  const saved = await saveRemoteState();
+  nodes.predictionMessage.textContent = saved ? "예측을 제출했습니다." : "예측은 이 기기에 저장됐지만 서버 저장에 실패했습니다.";
+  nodes.predictionMessage.classList.toggle("success", saved);
+  nodes.predictionMessage.classList.toggle("error", !saved);
 });
 
 nodes.logList.addEventListener("click", (event) => {
