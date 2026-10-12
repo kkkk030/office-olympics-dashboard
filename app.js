@@ -75,6 +75,7 @@ const nodes = {
   predictionRound: document.querySelector("#predictionRound"),
   predictionEvents: document.querySelector("#predictionEvents"),
   predictionLeaderboard: document.querySelector("#predictionLeaderboard"),
+  predictionAdminList: document.querySelector("#predictionAdminList"),
   predictionMessage: document.querySelector("#predictionMessage"),
   submitPrediction: document.querySelector("#submitPrediction"),
   loadRemoteData: document.querySelector("#loadRemoteData"),
@@ -664,6 +665,17 @@ function renderPredictionEvents() {
   const round = nodes.predictionRound.value || "round1";
   const existingPrediction = selectedPrediction();
   const events = predictionRoundEvents(round);
+  const isLocked = Boolean(existingPrediction);
+
+  nodes.submitPrediction.disabled = isLocked;
+  if (isLocked) {
+    nodes.predictionMessage.textContent = "이미 제출한 예측입니다. 수정이 필요하면 관리자에게 삭제를 요청해주세요.";
+    nodes.predictionMessage.classList.add("error");
+    nodes.predictionMessage.classList.remove("success");
+  } else if (nodes.predictionMessage.textContent.includes("이미 제출한 예측")) {
+    nodes.predictionMessage.textContent = "";
+    nodes.predictionMessage.classList.remove("error", "success");
+  }
 
   if (!events.length) {
     nodes.predictionEvents.innerHTML = `<p class="log-empty">해당 회차에 등록된 종목이 없습니다.</p>`;
@@ -685,15 +697,15 @@ function renderPredictionEvents() {
           </div>
           <label>
             금 · 3점
-            <select data-predict-medal="gold">${teamOptions(pick.gold)}</select>
+            <select data-predict-medal="gold" ${isLocked ? "disabled" : ""}>${teamOptions(pick.gold)}</select>
           </label>
           <label>
             은 · 2점
-            <select data-predict-medal="silver">${teamOptions(pick.silver)}</select>
+            <select data-predict-medal="silver" ${isLocked ? "disabled" : ""}>${teamOptions(pick.silver)}</select>
           </label>
           <label>
             동 · 1점
-            <select data-predict-medal="bronze">${teamOptions(pick.bronze)}</select>
+            <select data-predict-medal="bronze" ${isLocked ? "disabled" : ""}>${teamOptions(pick.bronze)}</select>
           </label>
         </article>
       `;
@@ -762,9 +774,37 @@ function renderPredictionLeaderboard() {
     .join("");
 }
 
+function renderPredictionAdminList() {
+  if (!nodes.predictionAdminList) return;
+
+  if (!state.predictions.length) {
+    nodes.predictionAdminList.innerHTML = `<p class="log-empty">아직 제출된 예측이 없습니다.</p>`;
+    return;
+  }
+
+  nodes.predictionAdminList.innerHTML = state.predictions
+    .slice()
+    .sort((a, b) => a.participant.localeCompare(b.participant, "ko") || a.round.localeCompare(b.round))
+    .map((prediction) => {
+      const result = scorePrediction(prediction);
+
+      return `
+        <article class="prediction-admin-card">
+          <div>
+            <strong>${escapeHtml(prediction.participant)}</strong>
+            <p>${predictionRoundLabel(prediction.round)} · ${result.score}점 · ${formatDateTime(prediction.updatedAt)}</p>
+          </div>
+          <button class="danger small" type="button" data-delete-prediction="${prediction.id}">삭제</button>
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function renderPredictions() {
   renderPredictionEvents();
   renderPredictionLeaderboard();
+  renderPredictionAdminList();
 }
 
 function escapeHtml(value) {
@@ -1006,13 +1046,15 @@ nodes.submitPrediction.addEventListener("click", async () => {
   );
 
   if (existingIndex >= 0) {
-    nextPrediction.id = state.predictions[existingIndex].id;
-    nextPrediction.createdAt = state.predictions[existingIndex].createdAt;
-    state.predictions[existingIndex] = nextPrediction;
-  } else {
-    state.predictions.push(nextPrediction);
+    saveState();
+    renderPredictions();
+    nodes.predictionMessage.textContent = "이미 제출한 예측입니다. 수정이 필요하면 관리자에게 삭제를 요청해주세요.";
+    nodes.predictionMessage.classList.add("error");
+    nodes.predictionMessage.classList.remove("success");
+    return;
   }
 
+  state.predictions.push(nextPrediction);
   saveState();
   renderPredictions();
 
@@ -1020,6 +1062,20 @@ nodes.submitPrediction.addEventListener("click", async () => {
   nodes.predictionMessage.textContent = saved ? "예측을 제출했습니다." : "예측은 이 기기에 저장됐지만 서버 저장에 실패했습니다.";
   nodes.predictionMessage.classList.toggle("success", saved);
   nodes.predictionMessage.classList.toggle("error", !saved);
+});
+
+nodes.predictionAdminList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-delete-prediction]");
+  if (!button) return;
+  if (!requireAdmin()) return;
+
+  const prediction = state.predictions.find((item) => item.id === button.dataset.deletePrediction);
+  if (!prediction || !confirm(`${prediction.participant}님의 ${predictionRoundLabel(prediction.round)} 예측을 삭제할까요?`)) return;
+
+  state.predictions = state.predictions.filter((item) => item.id !== prediction.id);
+  saveState();
+  renderPredictions();
+  await saveRemoteState();
 });
 
 nodes.logList.addEventListener("click", (event) => {

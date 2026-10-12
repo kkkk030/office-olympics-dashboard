@@ -886,7 +886,8 @@ h1 {
 }
 
 .prediction-events,
-.prediction-leaderboard {
+.prediction-leaderboard,
+.prediction-admin-list {
   display: grid;
   gap: 10px;
 }
@@ -946,6 +947,28 @@ h1 {
 .prediction-rank strong {
   color: var(--blue);
   font-size: 1.25rem;
+}
+
+.prediction-admin-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.prediction-admin-card strong,
+.prediction-admin-card p {
+  margin: 0;
+}
+
+.prediction-admin-card p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 800;
 }
 
 .manager-card {
