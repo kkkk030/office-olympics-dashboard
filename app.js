@@ -1,5 +1,10 @@
 const emptyMedals = { gold: "", silver: "", bronze: "" };
 const storageKey = "office-mini-olympics-state-v2";
+const adminSessionKey = "office-mini-olympics-admin";
+const adminCredentials = {
+  id: "admin",
+  password: "olympic2026",
+};
 
 const defaultState = {
   teams: [
@@ -33,6 +38,12 @@ const nodes = {
   dashboardView: document.querySelector("#dashboardView"),
   manageView: document.querySelector("#manageView"),
   viewTabs: document.querySelectorAll(".view-tab"),
+  adminLogin: document.querySelector("#adminLogin"),
+  adminContent: document.querySelector("#adminContent"),
+  adminId: document.querySelector("#adminId"),
+  adminPassword: document.querySelector("#adminPassword"),
+  loginMessage: document.querySelector("#loginMessage"),
+  logoutAdmin: document.querySelector("#logoutAdmin"),
   raceTrack: document.querySelector("#raceTrack"),
   progressLabel: document.querySelector("#progressLabel"),
   progressBar: document.querySelector("#progressBar"),
@@ -46,6 +57,10 @@ const nodes = {
   logText: document.querySelector("#logText"),
   logList: document.querySelector("#logList"),
   addLog: document.querySelector("#addLog"),
+  addEvent: document.querySelector("#addEvent"),
+  newEventName: document.querySelector("#newEventName"),
+  newEventDay: document.querySelector("#newEventDay"),
+  newEventIcon: document.querySelector("#newEventIcon"),
   exportData: document.querySelector("#exportData"),
   importData: document.querySelector("#importData"),
   resetData: document.querySelector("#resetData"),
@@ -61,21 +76,33 @@ function loadState() {
     const saved = JSON.parse(localStorage.getItem(storageKey));
     if (!saved || !Array.isArray(saved.events)) return clone(defaultState);
 
+    const baseEvents = defaultState.events.map((event) => {
+      const savedEvent = saved.events.find((item) => item.id === event.id) || {};
+      return normalizeEvent({ ...event, ...savedEvent });
+    });
+    const customEvents = saved.events
+      .filter((event) => event?.id && !defaultState.events.some((defaultEvent) => defaultEvent.id === event.id))
+      .map(normalizeEvent);
+
     return {
       teams: clone(defaultState.teams),
-      events: defaultState.events.map((event) => {
-        const savedEvent = saved.events.find((item) => item.id === event.id) || {};
-        return {
-          ...event,
-          status: ["pending", "live", "done"].includes(savedEvent.status) ? savedEvent.status : event.status,
-          medals: { ...emptyMedals, ...(savedEvent.medals || {}) },
-        };
-      }),
+      events: [...baseEvents, ...customEvents],
       logs: Array.isArray(saved.logs) ? saved.logs : [],
     };
   } catch (error) {
     return clone(defaultState);
   }
+}
+
+function normalizeEvent(event) {
+  return {
+    id: event.id || createId(),
+    name: String(event.name || "새 종목").trim(),
+    day: String(event.day || "Day").trim(),
+    icon: String(event.icon || "🏆").trim().slice(0, 4),
+    status: ["pending", "live", "done"].includes(event.status) ? event.status : "pending",
+    medals: { ...emptyMedals, ...(event.medals || {}) },
+  };
 }
 
 function saveState() {
@@ -290,12 +317,24 @@ function renderManager() {
       (event) => `
         <article class="manager-card" data-event-id="${event.id}">
           <div class="manager-title">
-            <span class="event-icon">${event.icon}</span>
+            <span class="event-icon">${escapeHtml(event.icon)}</span>
             <div>
-              <h3>${event.name}</h3>
-              <p>${event.day}</p>
+              <h3>${escapeHtml(event.name)}</h3>
+              <p>${escapeHtml(event.day)}</p>
             </div>
           </div>
+          <label>
+            종목명
+            <input data-field="name" type="text" value="${escapeHtml(event.name)}" />
+          </label>
+          <label>
+            일정
+            <input data-field="day" type="text" value="${escapeHtml(event.day)}" />
+          </label>
+          <label>
+            아이콘
+            <input data-field="icon" type="text" maxlength="4" value="${escapeHtml(event.icon)}" />
+          </label>
           <label>
             상태
             <select data-field="status">
@@ -316,12 +355,13 @@ function renderManager() {
             동
             <select data-medal="bronze">${teamOptions(event.medals.bronze)}</select>
           </label>
+          <button class="danger small delete-event" type="button" data-delete-event="${event.id}">삭제</button>
         </article>
       `,
     )
     .join("");
 
-  nodes.logEvent.innerHTML = state.events.map((event) => `<option value="${event.id}">${event.name}</option>`).join("");
+  nodes.logEvent.innerHTML = state.events.map((event) => `<option value="${event.id}">${escapeHtml(event.name)}</option>`).join("");
 }
 
 function renderLogs() {
@@ -357,7 +397,7 @@ function renderLogs() {
 }
 
 function escapeHtml(value) {
-  return value.replace(/[&<>"']/g, (character) => ({
+  return String(value).replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -374,6 +414,7 @@ function render() {
   renderEvents();
   renderManager();
   renderLogs();
+  renderAdminGate();
 }
 
 function setView(view) {
@@ -383,6 +424,20 @@ function setView(view) {
   nodes.viewTabs.forEach((button) => {
     button.classList.toggle("active", button.dataset.view === view);
   });
+
+  if (isManage && !isAdminAuthed()) {
+    nodes.adminId.focus();
+  }
+}
+
+function isAdminAuthed() {
+  return sessionStorage.getItem(adminSessionKey) === "true";
+}
+
+function renderAdminGate() {
+  const authed = isAdminAuthed();
+  nodes.adminLogin.hidden = authed;
+  nodes.adminContent.hidden = !authed;
 }
 
 document.querySelectorAll(".filter").forEach((button) => {
@@ -398,18 +453,97 @@ nodes.viewTabs.forEach((button) => {
 });
 
 nodes.managerList.addEventListener("change", (event) => {
+  updateManagedEvent(event);
+});
+
+nodes.managerList.addEventListener("input", (event) => {
+  updateManagedEvent(event);
+});
+
+function updateManagedEvent(event) {
   const card = event.target.closest("[data-event-id]");
   const selectedEvent = state.events.find((item) => item.id === card?.dataset.eventId);
   if (!selectedEvent) return;
 
-  if (event.target.dataset.field === "status") {
-    selectedEvent.status = event.target.value;
+  if (event.target.dataset.field) {
+    const field = event.target.dataset.field;
+    if (field === "status") {
+      selectedEvent.status = event.target.value;
+    }
+    if (field === "name") {
+      selectedEvent.name = event.target.value.trim() || "새 종목";
+    }
+    if (field === "day") {
+      selectedEvent.day = event.target.value.trim() || "Day";
+    }
+    if (field === "icon") {
+      selectedEvent.icon = event.target.value.trim().slice(0, 4) || "🏆";
+    }
   }
 
   if (event.target.dataset.medal) {
     selectedEvent.medals[event.target.dataset.medal] = event.target.value;
   }
 
+  saveState();
+  renderSummary(medalTable());
+  renderLeaderboard(medalTable());
+  renderEvents();
+  renderRaceTrack(medalTable());
+  renderLogs();
+}
+
+nodes.managerList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-delete-event]");
+  if (!button) return;
+  const selectedEvent = state.events.find((item) => item.id === button.dataset.deleteEvent);
+  if (!selectedEvent || !confirm(`${selectedEvent.name} 종목을 삭제할까요?`)) return;
+
+  state.events = state.events.filter((item) => item.id !== selectedEvent.id);
+  state.logs = state.logs.filter((log) => log.eventId !== selectedEvent.id);
+  saveState();
+  render();
+});
+
+nodes.adminLogin.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const id = nodes.adminId.value.trim();
+  const password = nodes.adminPassword.value;
+
+  if (id === adminCredentials.id && password === adminCredentials.password) {
+    sessionStorage.setItem(adminSessionKey, "true");
+    nodes.adminPassword.value = "";
+    nodes.loginMessage.textContent = "";
+    renderAdminGate();
+    return;
+  }
+
+  nodes.loginMessage.textContent = "아이디 또는 비밀번호가 맞지 않습니다.";
+});
+
+nodes.logoutAdmin.addEventListener("click", () => {
+  sessionStorage.removeItem(adminSessionKey);
+  renderAdminGate();
+});
+
+nodes.addEvent.addEventListener("click", () => {
+  const name = nodes.newEventName.value.trim();
+  if (!name) {
+    nodes.newEventName.focus();
+    return;
+  }
+
+  state.events.push(normalizeEvent({
+    id: createId(),
+    name,
+    day: nodes.newEventDay.value.trim() || `Day ${state.events.length + 1}`,
+    icon: nodes.newEventIcon.value.trim() || "🏆",
+    status: "pending",
+    medals: { ...emptyMedals },
+  }));
+  nodes.newEventName.value = "";
+  nodes.newEventDay.value = "";
+  nodes.newEventIcon.value = "";
   saveState();
   render();
 });
@@ -460,16 +594,18 @@ nodes.importData.addEventListener("change", async (event) => {
 
   try {
     const imported = JSON.parse(await file.text());
+    const importedEvents = Array.isArray(imported.events) ? imported.events : [];
+    const baseEvents = defaultState.events.map((defaultEvent) => {
+      const importedEvent = importedEvents.find((item) => item.id === defaultEvent.id) || {};
+      return normalizeEvent({ ...defaultEvent, ...importedEvent });
+    });
+    const customEvents = importedEvents
+      .filter((item) => item?.id && !defaultState.events.some((defaultEvent) => defaultEvent.id === item.id))
+      .map(normalizeEvent);
+
     state = {
       teams: clone(defaultState.teams),
-      events: defaultState.events.map((defaultEvent) => {
-        const importedEvent = imported.events?.find((item) => item.id === defaultEvent.id) || {};
-        return {
-          ...defaultEvent,
-          status: ["pending", "live", "done"].includes(importedEvent.status) ? importedEvent.status : defaultEvent.status,
-          medals: { ...emptyMedals, ...(importedEvent.medals || {}) },
-        };
-      }),
+      events: [...baseEvents, ...customEvents],
       logs: Array.isArray(imported.logs) ? imported.logs : [],
     };
     saveState();

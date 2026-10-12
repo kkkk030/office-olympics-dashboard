@@ -36,7 +36,8 @@ body {
 
 button,
 select,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -834,6 +835,30 @@ h1 {
   margin-top: 14px;
 }
 
+.admin-content {
+  display: grid;
+  gap: 14px;
+}
+
+.login-panel {
+  max-width: 720px;
+}
+
+.login-grid,
+.event-builder {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.login-message {
+  min-height: 22px;
+  margin: 10px 0 0;
+  color: var(--red);
+  font-weight: 900;
+}
+
 .manager-list {
   display: grid;
   gap: 10px;
@@ -841,7 +866,7 @@ h1 {
 
 .manager-card {
   display: grid;
-  grid-template-columns: minmax(170px, 1.2fr) repeat(4, minmax(126px, 1fr));
+  grid-template-columns: minmax(170px, 1.2fr) repeat(7, minmax(100px, 1fr)) auto;
   gap: 10px;
   align-items: end;
   padding: 14px;
@@ -1066,7 +1091,8 @@ label {
   font-weight: 900;
 }
 
-select {
+select,
+input {
   width: 100%;
   min-height: 44px;
   border: 2px solid var(--line);
@@ -1099,7 +1125,9 @@ select {
   .score-strip,
   .editor-grid,
   .manager-card,
-  .log-editor {
+  .log-editor,
+  .login-grid,
+  .event-builder {
     grid-template-columns: 1fr;
   }
 
@@ -1143,7 +1171,9 @@ select {
   .editor-grid,
   .manager-card,
   .log-editor,
-  .log-list {
+  .log-list,
+  .login-grid,
+  .event-builder {
     grid-template-columns: 1fr;
   }
 

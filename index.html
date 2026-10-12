@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Office Mini Olympics Dashboard</title>
-    <link rel="stylesheet" href="styles.css?v=14" />
+    <link rel="stylesheet" href="styles.css?v=15" />
   </head>
   <body>
     <main class="shell">
@@ -93,40 +93,86 @@
       </div>
 
       <section id="manageView" class="view-panel manage-view" aria-label="대회 관리">
-        <div class="control-panel">
-          <div class="section-title inline">
-            <div>
-              <p>Control Room</p>
-              <h2>종목 결과 관리</h2>
-            </div>
-            <div class="toolbar">
-              <button id="exportData" class="ghost" type="button">내보내기</button>
-              <label class="ghost file-btn">불러오기<input id="importData" type="file" accept="application/json" /></label>
-              <button id="resetData" class="danger" type="button">초기화</button>
-            </div>
+        <form id="adminLogin" class="control-panel login-panel">
+          <div class="section-title">
+            <p>Admin Gate</p>
+            <h2>관리자 로그인</h2>
           </div>
-          <div id="managerList" class="manager-list"></div>
-        </div>
+          <div class="login-grid">
+            <label>
+              아이디
+              <input id="adminId" type="text" autocomplete="username" />
+            </label>
+            <label>
+              비밀번호
+              <input id="adminPassword" type="password" autocomplete="current-password" />
+            </label>
+            <button class="primary" type="submit">들어가기</button>
+          </div>
+          <p id="loginMessage" class="login-message" aria-live="polite"></p>
+        </form>
 
-        <div class="control-panel">
-          <div class="section-title inline">
-            <div>
-              <p>Progress Log</p>
-              <h2>진행 사항 기록</h2>
+        <div id="adminContent" class="admin-content">
+          <div class="control-panel">
+            <div class="section-title inline">
+              <div>
+                <p>Control Room</p>
+                <h2>종목 결과 관리</h2>
+              </div>
+              <div class="toolbar">
+                <button id="logoutAdmin" class="ghost" type="button">로그아웃</button>
+                <button id="exportData" class="ghost" type="button">내보내기</button>
+                <label class="ghost file-btn">불러오기<input id="importData" type="file" accept="application/json" /></label>
+                <button id="resetData" class="danger" type="button">초기화</button>
+              </div>
             </div>
-            <button id="addLog" class="primary" type="button">기록 추가</button>
+            <div id="managerList" class="manager-list"></div>
           </div>
-          <div class="log-editor">
-            <label>
-              관련 종목
-              <select id="logEvent"></select>
-            </label>
-            <label>
-              진행 내용
-              <textarea id="logText" rows="3" placeholder="예: 스피드 퀴즈 예선 완료, 결승은 3시에 진행"></textarea>
-            </label>
+
+          <div class="control-panel">
+            <div class="section-title inline">
+              <div>
+                <p>Event Builder</p>
+                <h2>종목 추가</h2>
+              </div>
+              <button id="addEvent" class="primary" type="button">종목 추가</button>
+            </div>
+            <div class="event-builder">
+              <label>
+                종목명
+                <input id="newEventName" type="text" placeholder="예: 종이컵 탑 쌓기" />
+              </label>
+              <label>
+                일정
+                <input id="newEventDay" type="text" placeholder="예: Day 8" />
+              </label>
+              <label>
+                아이콘
+                <input id="newEventIcon" type="text" maxlength="4" placeholder="🏆" />
+              </label>
+            </div>
           </div>
-          <div id="logList" class="log-list" aria-live="polite"></div>
+
+          <div class="control-panel">
+            <div class="section-title inline">
+              <div>
+                <p>Progress Log</p>
+                <h2>진행 사항 기록</h2>
+              </div>
+              <button id="addLog" class="primary" type="button">기록 추가</button>
+            </div>
+            <div class="log-editor">
+              <label>
+                관련 종목
+                <select id="logEvent"></select>
+              </label>
+              <label>
+                진행 내용
+                <textarea id="logText" rows="3" placeholder="예: 스피드 퀴즈 예선 완료, 결승은 3시에 진행"></textarea>
+              </label>
+            </div>
+            <div id="logList" class="log-list" aria-live="polite"></div>
+          </div>
         </div>
       </section>
     </main>
@@ -145,6 +191,6 @@
       </article>
     </template>
 
-    <script src="app.js?v=14"></script>
+    <script src="app.js?v=15"></script>
   </body>
 </html>
