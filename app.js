@@ -654,6 +654,20 @@ function predictionRoundLabel(round) {
   return round === "round1" ? "1차 · Day 1~5" : "2차 · Day 6~9";
 }
 
+function validatePredictionPicks(picks) {
+  for (const event of state.events) {
+    const pick = picks[event.id];
+    if (!pick) continue;
+
+    const selectedTeams = [pick.gold, pick.silver, pick.bronze].filter(Boolean);
+    if (new Set(selectedTeams).size !== selectedTeams.length) {
+      return `${event.name}의 금·은·동은 서로 다른 팀으로 선택해주세요.`;
+    }
+  }
+
+  return "";
+}
+
 function selectedPrediction() {
   const participantKey = nodes.predictionName.value.trim().toLowerCase();
   const round = nodes.predictionRound.value;
@@ -1026,6 +1040,14 @@ nodes.submitPrediction.addEventListener("click", async () => {
     });
   });
 
+  const pickError = validatePredictionPicks(picks);
+  if (pickError) {
+    nodes.predictionMessage.textContent = pickError;
+    nodes.predictionMessage.classList.add("error");
+    nodes.predictionMessage.classList.remove("success");
+    return;
+  }
+
   const nextPrediction = normalizePrediction({
     participant,
     participantKey: participant.toLowerCase(),
@@ -1039,6 +1061,15 @@ nodes.submitPrediction.addEventListener("click", async () => {
     if (row?.state) state = hydrateSavedState(row.state);
   } catch (error) {
     // Local state still accepts the prediction if the latest remote read fails.
+  }
+
+  const latestPickError = validatePredictionPicks(nextPrediction.picks);
+  if (latestPickError) {
+    renderPredictions();
+    nodes.predictionMessage.textContent = latestPickError;
+    nodes.predictionMessage.classList.add("error");
+    nodes.predictionMessage.classList.remove("success");
+    return;
   }
 
   const existingIndex = state.predictions.findIndex(
