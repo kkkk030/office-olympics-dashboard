@@ -5,6 +5,8 @@ const adminSessionKey = "office-mini-olympics-admin";
 const supabaseUrl = "https://jgofoypdffjzhqnvktyy.supabase.co";
 const supabasePublishableKey = "sb_publishable_YM5K-4tNlfCpDWXq_s4LdA_yYfzmrPf";
 const remoteStateId = "main";
+const round1Deadline = Date.parse("2026-10-19T09:00:00+09:00");
+const round1DeadlineMessage = "1차 예측 제출은 10월 19일 오전 9시(한국시간)에 마감됐습니다.";
 const adminCredentials = {
   id: "admin",
   password: "olympic2026",
@@ -654,6 +656,10 @@ function predictionRoundLabel(round) {
   return round === "round1" ? "1차 · Day 1~5" : "2차 · Day 6~9";
 }
 
+function isPredictionRoundClosed(round) {
+  return round === "round1" && Date.now() >= round1Deadline;
+}
+
 function validatePredictionPicks(picks) {
   for (const event of state.events) {
     const pick = picks[event.id];
@@ -680,13 +686,21 @@ function renderPredictionEvents() {
   const existingPrediction = selectedPrediction();
   const events = predictionRoundEvents(round);
   const isLocked = Boolean(existingPrediction);
+  const isClosed = isPredictionRoundClosed(round);
 
-  nodes.submitPrediction.disabled = isLocked;
+  nodes.submitPrediction.disabled = isLocked || isClosed;
   if (isLocked) {
     nodes.predictionMessage.textContent = "이미 제출한 예측입니다. 수정이 필요하면 관리자에게 삭제를 요청해주세요.";
     nodes.predictionMessage.classList.add("error");
     nodes.predictionMessage.classList.remove("success");
-  } else if (nodes.predictionMessage.textContent.includes("이미 제출한 예측")) {
+  } else if (isClosed) {
+    nodes.predictionMessage.textContent = round1DeadlineMessage;
+    nodes.predictionMessage.classList.add("error");
+    nodes.predictionMessage.classList.remove("success");
+  } else if (
+    nodes.predictionMessage.textContent.includes("이미 제출한 예측") ||
+    nodes.predictionMessage.textContent === round1DeadlineMessage
+  ) {
     nodes.predictionMessage.textContent = "";
     nodes.predictionMessage.classList.remove("error", "success");
   }
@@ -711,15 +725,15 @@ function renderPredictionEvents() {
           </div>
           <label>
             금 · 3점
-            <select data-predict-medal="gold" ${isLocked ? "disabled" : ""}>${teamOptions(pick.gold)}</select>
+            <select data-predict-medal="gold" ${isLocked || isClosed ? "disabled" : ""}>${teamOptions(pick.gold)}</select>
           </label>
           <label>
             은 · 2점
-            <select data-predict-medal="silver" ${isLocked ? "disabled" : ""}>${teamOptions(pick.silver)}</select>
+            <select data-predict-medal="silver" ${isLocked || isClosed ? "disabled" : ""}>${teamOptions(pick.silver)}</select>
           </label>
           <label>
             동 · 1점
-            <select data-predict-medal="bronze" ${isLocked ? "disabled" : ""}>${teamOptions(pick.bronze)}</select>
+            <select data-predict-medal="bronze" ${isLocked || isClosed ? "disabled" : ""}>${teamOptions(pick.bronze)}</select>
           </label>
         </article>
       `;
@@ -1053,6 +1067,11 @@ nodes.submitPrediction.addEventListener("click", async () => {
   const participant = nodes.predictionName.value.trim();
   const round = nodes.predictionRound.value;
 
+  if (isPredictionRoundClosed(round)) {
+    renderPredictionEvents();
+    return;
+  }
+
   if (!participant) {
     nodes.predictionName.focus();
     nodes.predictionMessage.textContent = "참가자 이름을 입력해주세요.";
@@ -1091,6 +1110,11 @@ nodes.submitPrediction.addEventListener("click", async () => {
     if (row?.state) state = hydrateSavedState(row.state);
   } catch (error) {
     // Local state still accepts the prediction if the latest remote read fails.
+  }
+
+  if (isPredictionRoundClosed(round)) {
+    renderPredictions();
+    return;
   }
 
   const latestPickError = validatePredictionPicks(nextPrediction.picks);
@@ -1215,6 +1239,12 @@ nodes.importData.addEventListener("change", async (event) => {
 });
 
 render();
+
+if (Date.now() < round1Deadline) {
+  setTimeout(() => {
+    if (nodes.predictionRound.value === "round1") renderPredictionEvents();
+  }, round1Deadline - Date.now());
+}
 
 loadRemoteState({ showEmptyMessage: false });
 
