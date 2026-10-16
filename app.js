@@ -752,6 +752,30 @@ function scorePrediction(prediction) {
   return { score, goldHits, silverHits, bronzeHits, totalHits: goldHits + silverHits + bronzeHits };
 }
 
+function renderPredictionPicks(prediction) {
+  const picks = Object.entries(prediction.picks || {});
+  if (!picks.length) return `<p class="log-empty">저장된 예측 항목이 없습니다.</p>`;
+
+  const teamName = (teamId) => {
+    if (!teamId) return "미선택";
+    return escapeHtml(state.teams.find((team) => team.id === teamId)?.name || teamId);
+  };
+
+  return picks.map(([eventId, pick]) => {
+    const event = state.events.find((item) => item.id === eventId);
+    const eventName = event ? `${event.icon} ${event.name}` : `삭제된 종목 (${eventId})`;
+
+    return `
+      <div class="prediction-pick">
+        <strong>${escapeHtml(eventName)}</strong>
+        <span>금 ${teamName(pick?.gold)}</span>
+        <span>은 ${teamName(pick?.silver)}</span>
+        <span>동 ${teamName(pick?.bronze)}</span>
+      </div>
+    `;
+  }).join("");
+}
+
 function renderPredictionLeaderboard() {
   if (!state.predictions.length) {
     nodes.predictionLeaderboard.innerHTML = `<p class="log-empty">아직 제출된 예측이 없습니다.</p>`;
@@ -775,14 +799,20 @@ function renderPredictionLeaderboard() {
   nodes.predictionLeaderboard.innerHTML = rows
     .map(
       (row, index) => `
-        <article class="prediction-rank">
-          <div class="team-rank">${index + 1}</div>
-          <div>
-            <h3>${escapeHtml(row.participant)}</h3>
-            <p>${predictionRoundLabel(row.round)} · 적중 ${row.totalHits}개</p>
+        <details class="prediction-rank">
+          <summary class="prediction-rank-summary">
+            <span class="team-rank">${index + 1}</span>
+            <span class="prediction-rank-name">
+              <span>${escapeHtml(row.participant)}</span>
+              <small>${predictionRoundLabel(row.round)} · 적중 ${row.totalHits}개 · 눌러서 제출 내용 보기</small>
+            </span>
+            <strong>${row.score}점</strong>
+          </summary>
+          <div class="prediction-rank-detail">
+            <p>제출 시각: ${escapeHtml(formatDateTime(row.createdAt))}</p>
+            <div class="prediction-picks">${renderPredictionPicks(row)}</div>
           </div>
-          <strong>${row.score}점</strong>
-        </article>
+        </details>
       `,
     )
     .join("");
