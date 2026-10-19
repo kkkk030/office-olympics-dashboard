@@ -77,6 +77,7 @@ const nodes = {
   predictionRound: document.querySelector("#predictionRound"),
   predictionEvents: document.querySelector("#predictionEvents"),
   predictionLeaderboard: document.querySelector("#predictionLeaderboard"),
+  predictionRankingStatus: document.querySelector("#predictionRankingStatus"),
   predictionAdminList: document.querySelector("#predictionAdminList"),
   predictionMessage: document.querySelector("#predictionMessage"),
   submitPrediction: document.querySelector("#submitPrediction"),
@@ -297,6 +298,7 @@ async function loadRemoteState({ showEmptyMessage = true } = {}) {
     state = hydrateSavedState(row.state);
     saveState();
     render();
+    renderPredictionLeaderboard(state, row.updated_at);
     setSyncStatus(`서버 데이터를 불러왔습니다. 마지막 저장: ${formatDateTime(row.updated_at)}`, "success");
     return true;
   } catch (error) {
@@ -741,13 +743,13 @@ function renderPredictionEvents() {
     .join("");
 }
 
-function scorePrediction(prediction) {
+function scorePrediction(prediction, sourceState = state) {
   let score = 0;
   let goldHits = 0;
   let silverHits = 0;
   let bronzeHits = 0;
 
-  state.events.forEach((event) => {
+  sourceState.events.filter((event) => event.status === "done").forEach((event) => {
     const pick = prediction.picks?.[event.id] || {};
     if (event.medals.gold && pick.gold === event.medals.gold) {
       score += 3;
@@ -766,17 +768,17 @@ function scorePrediction(prediction) {
   return { score, goldHits, silverHits, bronzeHits, totalHits: goldHits + silverHits + bronzeHits };
 }
 
-function renderPredictionPicks(prediction) {
+function renderPredictionPicks(prediction, sourceState = state) {
   const picks = Object.entries(prediction.picks || {});
   if (!picks.length) return `<p class="log-empty">저장된 예측 항목이 없습니다.</p>`;
 
   const teamName = (teamId) => {
     if (!teamId) return "미선택";
-    return escapeHtml(state.teams.find((team) => team.id === teamId)?.name || teamId);
+    return escapeHtml(sourceState.teams.find((team) => team.id === teamId)?.name || teamId);
   };
 
   return picks.map(([eventId, pick]) => {
-    const event = state.events.find((item) => item.id === eventId);
+    const event = sourceState.events.find((item) => item.id === eventId);
     const eventName = event ? `${event.icon} ${event.name}` : `삭제된 종목 (${eventId})`;
 
     return `
@@ -790,18 +792,28 @@ function renderPredictionPicks(prediction) {
   }).join("");
 }
 
-function renderPredictionLeaderboard() {
-  if (!state.predictions.length) {
+function renderPredictionLeaderboard(sourceState = state, updatedAt = "") {
+  const completedCount = sourceState.events.filter((event) => event.status === "done").length;
+  nodes.predictionRankingStatus.textContent = `완료 종목 ${completedCount}/${sourceState.events.length}개 기준 · 금 3점 / 은 2점 / 동 1점${updatedAt ? ` · 서버 갱신 ${formatDateTime(updatedAt)}` : ""}`;
+
+  if (!sourceState.predictions.length) {
     nodes.predictionLeaderboard.innerHTML = `<p class="log-empty">아직 제출된 예측이 없습니다.</p>`;
     return;
   }
 
-  const rows = state.predictions
-    .map((prediction) => ({
-      ...prediction,
-      ...scorePrediction(prediction),
-    }))
-    .sort(
+  const participants = new Map();
+  sourceState.predictions.forEach((prediction) => {
+    const key = prediction.participantKey || prediction.participant.trim().toLowerCase();
+    if (!participants.has(key)) {
+      participants.set(key, { participant: prediction.participant, predictions: [], score: 0, goldHits: 0, silverHits: 0, bronzeHits: 0, totalHits: 0 });
+    }
+    const row = participants.get(key);
+    const result = scorePrediction(prediction, sourceState);
+    row.predictions.push({ ...prediction, ...result });
+    for (const field of ["score", "goldHits", "silverHits", "bronzeHits", "totalHits"]) row[field] += result[field];
+  });
+
+  const rows = [...participants.values()].sort(
       (a, b) =>
         b.score - a.score ||
         b.goldHits - a.goldHits ||
@@ -810,25 +822,31 @@ function renderPredictionLeaderboard() {
         a.participant.localeCompare(b.participant, "ko"),
     );
 
+  const sameStanding = (a, b) => a.score === b.score && a.goldHits === b.goldHits && a.silverHits === b.silverHits && a.bronzeHits === b.bronzeHits;
+  let rank = 0;
+
   nodes.predictionLeaderboard.innerHTML = rows
-    .map(
-      (row, index) => `
+    .map((row, index) => {
+      if (!index || !sameStanding(row, rows[index - 1])) rank = index + 1;
+      return `
         <details class="prediction-rank">
           <summary class="prediction-rank-summary">
-            <span class="team-rank">${index + 1}</span>
+            <span class="team-rank">${rank}</span>
             <span class="prediction-rank-name">
               <span>${escapeHtml(row.participant)}</span>
-              <small>${predictionRoundLabel(row.round)} · 적중 ${row.totalHits}개 · 눌러서 제출 내용 보기</small>
+              <small>${row.predictions.map((prediction) => predictionRoundLabel(prediction.round).split(" · ")[0]).join(" + ")} 합계 · 적중 ${row.totalHits}개 · 눌러서 제출 내용 보기</small>
             </span>
             <strong>${row.score}점</strong>
           </summary>
           <div class="prediction-rank-detail">
-            <p>제출 시각: ${escapeHtml(formatDateTime(row.createdAt))}</p>
-            <div class="prediction-picks">${renderPredictionPicks(row)}</div>
+            ${row.predictions.sort((a, b) => a.round.localeCompare(b.round)).map((prediction) => `
+              <p><strong>${predictionRoundLabel(prediction.round)} · ${prediction.score}점</strong> · 제출 ${escapeHtml(formatDateTime(prediction.createdAt))}</p>
+              <div class="prediction-picks">${renderPredictionPicks(prediction, sourceState)}</div>
+            `).join("")}
           </div>
         </details>
-      `,
-    )
+      `;
+    })
     .join("");
 }
 
@@ -975,6 +993,7 @@ function updateManagedEvent(event) {
   renderLeaderboard(medalTable());
   renderEvents();
   renderRaceTrack(medalTable());
+  renderPredictions();
   renderLogs();
 }
 
@@ -1247,6 +1266,17 @@ if (Date.now() < round1Deadline) {
 }
 
 loadRemoteState({ showEmptyMessage: false });
+
+// Keep the public standings current without resetting an unfinished prediction form.
+setInterval(async () => {
+  if (document.hidden || !nodes.predictView.classList.contains("active") || isAdminAuthed()) return;
+  try {
+    const row = await fetchRemoteState();
+    if (row?.state) renderPredictionLeaderboard(hydrateSavedState(row.state), row.updated_at);
+  } catch (error) {
+    nodes.predictionRankingStatus.textContent = "실시간 순위 갱신 실패 · 마지막 표시된 순위입니다. 연결을 확인해주세요.";
+  }
+}, 15000);
 
 if (sharedStateImported) {
   alert("공유 링크 데이터를 이 기기에 저장했습니다.");
