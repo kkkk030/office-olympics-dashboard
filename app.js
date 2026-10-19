@@ -5,8 +5,8 @@ const adminSessionKey = "office-mini-olympics-admin";
 const supabaseUrl = "https://jgofoypdffjzhqnvktyy.supabase.co";
 const supabasePublishableKey = "sb_publishable_YM5K-4tNlfCpDWXq_s4LdA_yYfzmrPf";
 const remoteStateId = "main";
-const round1Deadline = Date.parse("2026-10-19T09:00:00+09:00");
-const round1DeadlineMessage = "1차 예측 제출은 10월 19일 오전 9시(한국시간)에 마감됐습니다.";
+const round1Deadline = Date.parse("2026-10-19T11:30:00+09:00");
+const round1DeadlineMessage = "1차 예측 제출은 10월 19일 오전 11시 30분(한국시간)에 마감됐습니다.";
 const adminCredentials = {
   id: "admin",
   password: "olympic2026",
