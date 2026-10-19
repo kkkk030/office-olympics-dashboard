@@ -780,13 +780,16 @@ function renderPredictionPicks(prediction, sourceState = state) {
   return picks.map(([eventId, pick]) => {
     const event = sourceState.events.find((item) => item.id === eventId);
     const eventName = event ? `${event.icon} ${event.name}` : `삭제된 종목 (${eventId})`;
+    const medals = ["gold", "silver", "bronze"];
+    const hits = Object.fromEntries(medals.map((medal) => [medal, Boolean(event?.status === "done" && pick?.[medal] && pick[medal] === event.medals?.[medal])]));
+    const hasHit = medals.some((medal) => hits[medal]);
 
     return `
-      <div class="prediction-pick">
+      <div class="prediction-pick${hasHit ? " prediction-pick-hit" : ""}">
         <strong>${escapeHtml(eventName)}</strong>
-        <span>금 ${teamName(pick?.gold)}</span>
-        <span>은 ${teamName(pick?.silver)}</span>
-        <span>동 ${teamName(pick?.bronze)}</span>
+        <span class="${hits.gold ? "medal-pick-hit" : ""}">금 ${teamName(pick?.gold)}${hits.gold ? " ✓" : ""}</span>
+        <span class="${hits.silver ? "medal-pick-hit" : ""}">은 ${teamName(pick?.silver)}${hits.silver ? " ✓" : ""}</span>
+        <span class="${hits.bronze ? "medal-pick-hit" : ""}">동 ${teamName(pick?.bronze)}${hits.bronze ? " ✓" : ""}</span>
       </div>
     `;
   }).join("");
@@ -794,7 +797,7 @@ function renderPredictionPicks(prediction, sourceState = state) {
 
 function renderPredictionLeaderboard(sourceState = state, updatedAt = "") {
   const completedCount = sourceState.events.filter((event) => event.status === "done").length;
-  nodes.predictionRankingStatus.textContent = `완료 종목 ${completedCount}/${sourceState.events.length}개 기준 · 금 3점 / 은 2점 / 동 1점${updatedAt ? ` · 서버 갱신 ${formatDateTime(updatedAt)}` : ""}`;
+  nodes.predictionRankingStatus.textContent = `완료 종목 ${completedCount}/${sourceState.events.length}개 기준 · 금 3점 / 은 2점 / 동 1점 · 초록 음영은 적중${updatedAt ? ` · 서버 갱신 ${formatDateTime(updatedAt)}` : ""}`;
 
   if (!sourceState.predictions.length) {
     nodes.predictionLeaderboard.innerHTML = `<p class="log-empty">아직 제출된 예측이 없습니다.</p>`;
